@@ -73,7 +73,6 @@ fn main() {
     }
 
     table.load_preset(UTF8_FULL).set_width(80);
-    // table.set_header(vec!["Header1", "Header2", "Header3"]);
     // Print the sizes values
     for (root, size) in &sizes {
         if root != "." {
