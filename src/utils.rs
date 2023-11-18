@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 /// # Examples
 ///
 /// ```
-/// let root = get_root(String::from("some/path"));
+/// let root = fs_rs::utils::get_root("/some/path", Some(true));
 /// ```
 pub fn get_root(path: &str, get_first: Option<bool>) -> PathBuf {
     let first = get_first.unwrap_or(true);

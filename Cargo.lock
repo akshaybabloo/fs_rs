@@ -176,7 +176,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs-rs"
+name = "fs_rs"
 version = "0.0.1"
 dependencies = [
  "clap",

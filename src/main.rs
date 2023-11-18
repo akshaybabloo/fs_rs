@@ -10,7 +10,7 @@ use humansize::{format_size, DECIMAL};
 use spinoff::{spinners, Color, Spinner, Streams};
 use walkdir::WalkDir;
 
-mod utils;
+use fs_rs::utils;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

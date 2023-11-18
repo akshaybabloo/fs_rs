@@ -1,17 +1,20 @@
 [package]
-name = "fs-rs"
+name = "fs_rs"
 version = "0.0.1"
 edition = "2021"
 description = "A simple file system information tool written in Rust."
 license = "MIT"
-homepage = "https://github.com/akshaybabloo/fs-rs"
-repository = "https://github.com/akshaybabloo/fs-rs"
+homepage = "https://github.com/akshaybabloo/fs_rs"
+repository = "https://github.com/akshaybabloo/fs_rs"
 keywords = ["file", "system", "information", "tool", "cli"]
 authors = ["Akshay Raj Gollahalli <akshay@gollahalli.com>"]
 readme = "README.md"
 categories = ["command-line-utilities"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+#[[bin]]
+#path = "src/main.rs"
+#name = "fs"
+#test = false
 
 [dependencies]
 clap = { version = "4.4.8", features = ["derive"] }
