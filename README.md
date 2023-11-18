@@ -17,3 +17,4 @@ fs_rs
 # For a specific folder
 fs_rs /path/to/folder
 ```
+![fs_rs](https://raw.githubusercontent.com/akshaybabloo/fs_rs/main/assets/screencast.gif)
