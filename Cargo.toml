@@ -3,6 +3,13 @@ name = "fs-rs"
 version = "0.0.1"
 edition = "2021"
 description = "A simple file system information tool written in Rust."
+license = "MIT"
+homepage = "https://github.com/akshaybabloo/fs-rs"
+repository = "https://github.com/akshaybabloo/fs-rs"
+keywords = ["file", "system", "information", "tool", "cli"]
+authors = ["Akshay Raj Gollahalli <akshay@gollahalli.com>"]
+readme = "README.md"
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
