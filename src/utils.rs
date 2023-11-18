@@ -15,25 +15,18 @@ use std::path::{Path, PathBuf};
 /// ```
 pub fn get_root(path: &str, get_first: Option<bool>) -> PathBuf {
     let first = get_first.unwrap_or(true);
-
-    let components: Vec<_> = Path::new(path).components().collect();
+    let path = Path::new(path);
 
     if first {
-        // Take the first two components (if available) and add them to root
-        let mut root = PathBuf::new();
-        if let Some(first_component) = components.get(0) {
-            root.push(first_component.as_os_str());
-            if let Some(second_component) = components.get(1) {
-                root.push(second_component.as_os_str());
-            }
-        }
-        root
+        let components: Vec<_> = path.components().take(2).collect();
+        components.iter().collect()
     } else {
-        // Take the last component (if available) and add it to root
-        if let Some(last_component) = components.last() {
-            PathBuf::from(last_component.as_os_str())
+        if path.is_file() {
+            path.parent().map_or(PathBuf::new(), ToOwned::to_owned)
         } else {
-            PathBuf::new()
+            path.components()
+                .last()
+                .map_or(PathBuf::new(), |comp| PathBuf::from(comp.as_os_str()))
         }
     }
 }
