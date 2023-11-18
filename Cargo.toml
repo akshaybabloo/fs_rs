@@ -10,4 +10,5 @@ description = "A simple file system information tool written in Rust."
 clap = { version = "4.4.8", features = ["derive"] }
 comfy-table = "7.1.0"
 humansize = "2.1.3"
+spinoff = { version = "0.8.0", features = ["dots"] }
 walkdir = { version = "2.4.0", features = [] }

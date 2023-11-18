@@ -4,9 +4,10 @@ use std::path::Path;
 use std::process::exit;
 
 use clap::Parser;
-use comfy_table::presets::UTF8_FULL;
+use comfy_table::presets::NOTHING;
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
+use spinoff::{spinners, Color, Spinner, Streams};
 use walkdir::WalkDir;
 
 mod utils;
@@ -23,6 +24,12 @@ fn main() {
     let cli = Args::parse();
     let mut sizes: HashMap<String, u64> = HashMap::new();
     let mut table = Table::new();
+    let mut sp = Spinner::new_with_stream(
+        spinners::Dots,
+        "Computing...",
+        Color::Yellow,
+        Streams::Stderr,
+    );
 
     for input_path in cli.path {
         for entry in WalkDir::new(&input_path) {
@@ -45,10 +52,12 @@ fn main() {
                     }
                     Err(err) => {
                         println!("failed to get metadata: {}", err);
+                        sp.stop();
                         exit(1)
                     }
                 },
                 Err(err) => {
+                    sp.stop();
                     let path = err.path().unwrap_or(Path::new("")).display();
                     println!("failed to access entry {}", path);
                     if let Some(inner) = err.io_error() {
@@ -72,7 +81,7 @@ fn main() {
         }
     }
 
-    table.load_preset(UTF8_FULL).set_width(80);
+    table.load_preset(NOTHING).set_width(80);
     // Print the sizes values
     for (root, size) in &sizes {
         if root != "." {
@@ -80,5 +89,6 @@ fn main() {
             table.add_row(vec![root, &String::from(sz)]);
         }
     }
+    sp.stop_with_message("");
     println!("{table}")
 }

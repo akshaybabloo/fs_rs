@@ -37,4 +37,3 @@ pub fn get_root(path: &str, get_first: Option<bool>) -> PathBuf {
         }
     }
 }
-
