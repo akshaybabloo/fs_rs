@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-use std::io;
 use std::path::Path;
-use std::process::exit;
 
 use clap::Parser;
 use comfy_table::presets::NOTHING;
@@ -32,53 +30,34 @@ pub fn run() {
     );
 
     for input_path in cli.path {
-        for entry in WalkDir::new(&input_path) {
-            match entry {
-                Ok(entry) => match entry.metadata() {
-                    Ok(metadata) => {
-                        let get_first = input_path == ".";
-                        let entry_path = entry.path().display().to_string();
-                        let root_name = utils::get_root(&entry_path, Some(get_first))
-                            .display()
-                            .to_string();
-                        if metadata.is_dir() {
-                            sizes.entry(root_name).or_insert(0);
-                        } else if metadata.is_file() {
-                            sizes
-                                .entry(root_name)
-                                .and_modify(|root_name| *root_name += metadata.len())
-                                .or_insert(0);
-                        }
-                    }
-                    Err(err) => {
-                        println!("failed to get metadata: {}", err);
-                        sp.stop();
-                        exit(1)
-                    }
-                },
-                Err(err) => {
-                    sp.stop();
-                    let path = err.path().unwrap_or(Path::new("")).display();
-                    println!("failed to access entry {}", path);
-                    if let Some(inner) = err.io_error() {
-                        match inner.kind() {
-                            io::ErrorKind::InvalidData => {
-                                println!("entry contains invalid data: {}", inner);
-                                exit(1)
-                            }
-                            io::ErrorKind::PermissionDenied => {
-                                println!("Missing permission to read entry: {}", inner);
-                                exit(1)
-                            }
-                            _ => {
-                                println!("Unexpected error occurred: {}", inner);
-                                exit(1)
-                            }
-                        }
-                    }
+        let path = Path::new(&input_path);
+
+        WalkDir::new(path)
+            .min_depth(1)
+            .max_depth(1)
+            .into_iter()
+            .filter_map(Result::ok)
+            .for_each(|entry| {
+                let entry_path = entry.path();
+
+                if entry.file_type().is_file() {
+                    let file_size = entry.metadata().unwrap().len();
+                    let file_name = entry_path
+                        .file_name()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string();
+                    sizes.insert(file_name, file_size);
+                } else if entry.file_type().is_dir() {
+                    let dir_size = utils::dir_size(entry_path);
+                    let dir_name = entry_path
+                        .file_name()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string();
+                    sizes.insert(dir_name, dir_size);
                 }
-            }
-        }
+            });
     }
 
     table.load_preset(NOTHING).set_width(80);
@@ -87,7 +66,6 @@ pub fn run() {
         if root != "." {
             let sz = format_size(*size, DECIMAL);
             table.add_row(vec![root, &String::from(sz)]);
-            table.add_row(vec![root, &size.to_string()]);
         }
     }
     sp.stop_with_message("");

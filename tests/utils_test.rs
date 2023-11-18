@@ -1,48 +1,26 @@
-use fs_rs::utils;
-use std::path::PathBuf;
-
-use std::env;
 use std::fs::File;
 use std::io::Write;
+use tempfile::tempdir;
 
-fn create_temp_file() -> std::io::Result<PathBuf> {
-    let mut temp_dir = env::temp_dir();
-    temp_dir.push("test_get_root_last_component_with_file.txt");
-
-    let mut file = File::create(&temp_dir)?;
-    writeln!(file, "Temporary file content")?;
-
-    Ok(temp_dir)
-}
+use fs_rs::utils::dir_size;
 
 #[test]
-fn test_get_root_first_component() {
-    let path = "/some/path";
-    let root = utils::get_root(path, Some(true));
-    assert_eq!(root, PathBuf::from("/some"));
-}
+fn test_dir_size() {
+    let dir = tempdir().expect("Failed to create a temporary directory");
+    let file_path1 = dir.path().join("file1.txt");
+    let file_path2 = dir.path().join("file2.txt");
 
-#[test]
-fn test_get_root_last_component() {
-    let path = "/some/path";
-    let root = utils::get_root(path, Some(false));
-    assert_eq!(
-        root,
-        PathBuf::from("path"),
-        "Expected 'path', got {:?}",
-        root
-    );
-}
+    let mut file1 = File::create(&file_path1).expect("Failed to create file1");
+    let mut file2 = File::create(&file_path2).expect("Failed to create file2");
 
-#[test]
-fn test_get_root_last_component_with_file() {
-    let temp_file_path = create_temp_file().expect("Failed to create temporary file");
-    let root = utils::get_root(temp_file_path.to_str().unwrap(), Some(false));
+    writeln!(file1, "Hello").expect("Failed to write to file1");
+    writeln!(file2, "Hello, Rust!").expect("Failed to write to file2");
 
-    // The expected result is the parent directory of the temporary file
-    let expected = temp_file_path.parent().unwrap();
-    assert_eq!(root, expected, "Expected {:?}, got {:?}", expected, root);
+    let size = dir_size(dir.path());
 
-    // Clean up the temporary file
-    std::fs::remove_file(temp_file_path).expect("Failed to delete temporary file");
+    // The size may vary
+    assert_eq!(size, 19);
+
+    dir.close()
+        .expect("Failed to delete the temporary directory");
 }
