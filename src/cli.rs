@@ -11,6 +11,7 @@ use walkdir::WalkDir;
 
 use crate::utils;
 
+/// CLI arguments
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -19,6 +20,7 @@ struct Args {
     path: Vec<String>,
 }
 
+/// Run the CLI
 pub fn run() {
     let cli = Args::parse();
     let mut sizes: HashMap<String, u64> = HashMap::new();
@@ -29,16 +31,26 @@ pub fn run() {
         Streams::Stderr,
     );
 
-    for input_path in &cli.path {
+    for (index, input_path) in cli.path.iter().enumerate() {
         let path = Path::new(&input_path);
 
         if !path.exists() {
-            sp.stop_with_message(&format!(
+            // Stop the spinner if it's the first index
+            if index == 0 {
+                sp.stop_with_message("");
+            }
+            
+            println!(
                 "{} {}",
                 input_path.red().bold(),
                 "does not exist".red()
-            ));
-            return;
+            );
+            
+            // If on the last index of the path vector, return
+            if index == cli.path.len() - 1 {
+                return;
+            }
+            continue;
         }
 
         if path.is_file() {
