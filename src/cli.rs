@@ -39,13 +39,9 @@ pub fn run() {
             if index == 0 {
                 sp.stop_with_message("");
             }
-            
-            println!(
-                "{} {}",
-                input_path.red().bold(),
-                "does not exist".red()
-            );
-            
+
+            println!("{} {}", input_path.red().bold(), "does not exist".red());
+
             // If on the last index of the path vector, return
             if index == cli.path.len() - 1 {
                 return;
