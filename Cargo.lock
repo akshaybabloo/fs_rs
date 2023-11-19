@@ -186,6 +186,7 @@ name = "fs_rs"
 version = "0.0.3"
 dependencies = [
  "clap",
+ "colored",
  "comfy-table",
  "humansize",
  "spinoff",

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use clap::Parser;
+use colored::Colorize;
 use comfy_table::presets::NOTHING;
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
@@ -28,21 +29,21 @@ pub fn run() {
         Streams::Stderr,
     );
 
-    for input_path in cli.path {
+    for input_path in &cli.path {
         let path = Path::new(&input_path);
-        
+
         if !path.exists() {
-            sp.stop_with_message(&format!("{} does not exist", input_path));
+            sp.stop_with_message(&format!(
+                "{} {}",
+                input_path.red().bold(),
+                "does not exist".red()
+            ));
             return;
         }
-        
+
         if path.is_file() {
             let file_size = path.metadata().unwrap().len();
-            let file_name = path
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .to_string();
+            let file_name = path.file_name().unwrap().to_string_lossy().to_string();
             sizes.insert(file_name, file_size);
             continue;
         }
@@ -88,5 +89,11 @@ pub fn run() {
         table.add_row(vec![root, &String::from(sz)]);
     }
     sp.stop_with_message("");
-    println!("{table}")
+    println!("{table}");
+
+    if cli.path.len() == 1 {
+        let total_size = sizes.values().sum::<u64>();
+        let sz = format_size(total_size, DECIMAL);
+        println!("\n{} {}", "Total size:".green(), sz.green().bold());
+    }
 }
