@@ -31,7 +31,11 @@ pub fn run() {
 
     for input_path in cli.path {
         let path = Path::new(&input_path);
-
+        
+        if !path.exists() {
+            sp.stop_with_message(&format!("{} does not exist", input_path));
+            return;
+        }
         WalkDir::new(path)
             .min_depth(1)
             .max_depth(1)
@@ -60,6 +64,10 @@ pub fn run() {
             });
     }
 
+    if sizes.is_empty() {
+        sp.stop_with_message("No files or folders found");
+        return;
+    }
     table.load_preset(NOTHING).set_width(80);
     // Print the sizes values
     for (root, size) in &sizes {
