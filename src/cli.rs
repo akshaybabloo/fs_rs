@@ -21,7 +21,6 @@ struct Args {
 pub fn run() {
     let cli = Args::parse();
     let mut sizes: HashMap<String, u64> = HashMap::new();
-    let mut table = Table::new();
     let mut sp = Spinner::new_with_stream(
         spinners::Dots,
         "Computing...",
@@ -36,6 +35,18 @@ pub fn run() {
             sp.stop_with_message(&format!("{} does not exist", input_path));
             return;
         }
+        
+        if path.is_file() {
+            let file_size = path.metadata().unwrap().len();
+            let file_name = path
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
+            sizes.insert(file_name, file_size);
+            continue;
+        }
+
         WalkDir::new(path)
             .min_depth(1)
             .max_depth(1)
@@ -68,13 +79,13 @@ pub fn run() {
         sp.stop_with_message("No files or folders found");
         return;
     }
+
+    let mut table = Table::new();
     table.load_preset(NOTHING).set_width(80);
     // Print the sizes values
     for (root, size) in &sizes {
-        if root != "." {
-            let sz = format_size(*size, DECIMAL);
-            table.add_row(vec![root, &String::from(sz)]);
-        }
+        let sz = format_size(*size, DECIMAL);
+        table.add_row(vec![root, &String::from(sz)]);
     }
     sp.stop_with_message("");
     println!("{table}")
