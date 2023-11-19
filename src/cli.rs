@@ -98,7 +98,7 @@ pub fn run() {
     // Print the sizes values
     for (root, size) in &sizes {
         let sz = format_size(*size, DECIMAL);
-        table.add_row(vec![root, &String::from(sz)]);
+        table.add_row(vec![root, &sz]);
     }
     sp.stop_with_message("");
     println!("{table}");
