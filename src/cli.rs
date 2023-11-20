@@ -18,6 +18,10 @@ struct Args {
     /// Optional path to the files or folders
     #[arg(default_values_t = [".".to_string()])]
     path: Vec<String>,
+
+    /// Sort the output by size
+    #[clap(long, short, action)]
+    sort_by_size: bool,
 }
 
 /// Run the CLI
@@ -91,10 +95,20 @@ pub fn run() {
 
     let mut table = Table::new();
     table.load_preset(NOTHING).set_width(80);
-    // Print the sizes values
-    for (root, size) in &sizes {
-        let sz = format_size(*size, DECIMAL);
-        table.add_row(vec![root, &sz]);
+
+    // Sort the sizes values
+    if cli.sort_by_size {
+        let sorted_sizes = utils::sort_by_size(&sizes);
+        for (root, size) in sorted_sizes {
+            let sz = format_size(size, DECIMAL);
+            table.add_row(vec![root, sz]);
+        }
+    } else {
+        // Print the sizes values
+        for (root, size) in &sizes {
+            let sz = format_size(*size, DECIMAL);
+            table.add_row(vec![root, &sz]);
+        }
     }
     sp.stop_with_message("");
     println!("{table}");

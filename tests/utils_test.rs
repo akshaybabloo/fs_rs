@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use tempfile::tempdir;
@@ -27,4 +28,21 @@ fn test_dir_size() {
 
     dir.close()
         .expect("Failed to delete the temporary directory");
+}
+
+#[test]
+fn test_sort_by_size() {
+    let left: HashMap<String, u64> = HashMap::from([
+        ("file1.txt".to_string(), 100),
+        ("file2.txt".to_string(), 200),
+    ]);
+
+    let right: Vec<(String, u64)> = vec![
+        ("file2.txt".to_string(), 200),
+        ("file1.txt".to_string(), 100),
+    ];
+
+    let sorted_vec = fs_rs::utils::sort_by_size(&left);
+
+    assert_eq!(sorted_vec, right, "Expected {:?}, but got {:?}", right, sorted_vec);
 }
