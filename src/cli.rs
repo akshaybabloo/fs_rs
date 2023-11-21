@@ -104,8 +104,9 @@ pub fn run() {
             table.add_row(vec![root, sz]);
         }
     } else {
+        let sorted_names = utils::sort_by_name(&sizes);
         // Print the sizes values
-        for (root, size) in &sizes {
+        for (root, size) in &sorted_names {
             let sz = format_size(*size, DECIMAL);
             table.add_row(vec![root, &sz]);
         }

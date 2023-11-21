@@ -44,5 +44,30 @@ fn test_sort_by_size() {
 
     let sorted_vec = fs_rs::utils::sort_by_size(&left);
 
-    assert_eq!(sorted_vec, right, "Expected {:?}, but got {:?}", right, sorted_vec);
+    assert_eq!(
+        sorted_vec, right,
+        "Expected {:?}, but got {:?}",
+        right, sorted_vec
+    );
+}
+
+#[test]
+fn test_sort_by_name() {
+    let left: HashMap<String, u64> = HashMap::from([
+        ("file2.txt".to_string(), 200),
+        ("file1.txt".to_string(), 100),
+    ]);
+
+    let right: Vec<(String, u64)> = vec![
+        ("file1.txt".to_string(), 100),
+        ("file2.txt".to_string(), 200),
+    ];
+
+    let sorted_vec = fs_rs::utils::sort_by_name(&left);
+
+    assert_eq!(
+        sorted_vec, right,
+        "Expected {:?}, but got {:?}",
+        right, sorted_vec
+    );
 }
