@@ -113,10 +113,8 @@ pub fn run() {
     }
     sp.stop_with_message("");
     println!("{table}");
-
-    if cli.path.len() == 1 {
-        let total_size = sizes.values().sum::<u64>();
-        let sz = format_size(total_size, DECIMAL);
-        println!("\n{} {}", "Total size:".green(), sz.green().bold());
-    }
+    
+    let total_size = sizes.values().sum::<u64>();
+    let sz = format_size(total_size, DECIMAL);
+    println!("\n{} {}", "Total size:".green(), sz.green().bold());
 }
