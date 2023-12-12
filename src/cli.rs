@@ -3,10 +3,11 @@ use std::path::Path;
 
 use clap::Parser;
 use colored::Colorize;
-use comfy_table::presets::NOTHING;
+use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
 use spinoff::{spinners, Color, Spinner, Streams};
+use sysinfo::{DiskExt, System, SystemExt};
 use walkdir::WalkDir;
 
 use crate::utils;
@@ -22,6 +23,10 @@ struct Args {
     /// Sort the output by size
     #[clap(long, short, action)]
     sort_by_size: bool,
+
+    /// Show disk usage
+    #[clap(long, short, action)]
+    disk_usage: bool,
 }
 
 /// Run the CLI
@@ -113,8 +118,31 @@ pub fn run() {
     }
     sp.stop_with_message("");
     println!("{table}");
-    
+
     let total_size = sizes.values().sum::<u64>();
     let sz = format_size(total_size, DECIMAL);
     println!("\n{} {}", "Total size:".green(), sz.green().bold());
+    println!(
+        "{} {}\n",
+        "Number of files:".green(),
+        sizes.len().to_string().green().bold()
+    );
+
+    if cli.disk_usage {
+        let mut disk_table = Table::new();
+        let mut sys = System::new_all();
+        // First we update all information of our `System` struct.
+        sys.refresh_all();
+        disk_table
+            .load_preset(ASCII_MARKDOWN)
+            .set_header(vec!["Name", "Total", "Available"]);
+        for disk in sys.disks() {
+            disk_table.add_row(vec![
+                disk.name().to_str().unwrap().to_string(),
+                format_size(disk.total_space(), DECIMAL),
+                format_size(disk.available_space(), DECIMAL),
+            ]);
+        }
+        println!("{disk_table}");
+    }
 }
