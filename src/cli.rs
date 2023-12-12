@@ -88,7 +88,7 @@ pub fn run() {
                         .unwrap()
                         .to_string_lossy()
                         .to_string();
-                    sizes.insert(dir_name, dir_size);
+                    sizes.insert(dir_name + "/", dir_size);
                 }
             });
     }
