@@ -7,7 +7,7 @@ use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
 use spinoff::{spinners, Color, Spinner, Streams};
-use sysinfo::{DiskExt, System, SystemExt};
+use sysinfo::{Disks, System};
 use walkdir::WalkDir;
 
 use crate::utils;
@@ -136,7 +136,8 @@ pub fn run() {
         disk_table
             .load_preset(ASCII_MARKDOWN)
             .set_header(vec!["Name", "Total", "Available"]);
-        for disk in sys.disks() {
+        let disks = Disks::new_with_refreshed_list();
+        for disk in &disks {
             disk_table.add_row(vec![
                 disk.name().to_str().unwrap().to_string(),
                 format_size(disk.total_space(), DECIMAL),
