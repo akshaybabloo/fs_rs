@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use clap::Parser;
+use clap::{Parser, ArgAction};
 use colored::Colorize;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
@@ -21,11 +21,11 @@ struct Args {
     path: Vec<String>,
 
     /// Sort the output by size
-    #[clap(long, short, action)]
+    #[arg(long, short, action=ArgAction::SetTrue)]
     sort_by_size: bool,
 
     /// Show disk usage
-    #[clap(long, short, action)]
+    #[arg(long, short, action=ArgAction::SetTrue)]
     disk_usage: bool,
 }
 
