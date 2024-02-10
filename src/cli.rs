@@ -21,11 +21,11 @@ struct Args {
     path: Vec<String>,
 
     /// Sort the output by size
-    #[arg(long, short, action=ArgAction::SetTrue)]
+    #[arg(long, short, action = ArgAction::SetTrue)]
     sort_by_size: bool,
 
     /// Show disk usage
-    #[arg(long, short, action=ArgAction::SetTrue)]
+    #[arg(long, short, action = ArgAction::SetTrue)]
     disk_usage: bool,
 }
 
@@ -59,9 +59,19 @@ pub fn run() {
         }
 
         if path.is_file() {
-            let file_size = path.metadata().unwrap().len();
-            let file_name = utils::truncate_filename(Path::new(path.file_name().unwrap()));
-            sizes.insert(file_name, file_size);
+            match path.metadata() {
+                Ok(metadata) => {
+                    let file_size = metadata.len();
+                    match path.file_name() {
+                        Some(file_name) => {
+                            let file_name = utils::truncate_filename(Path::new(file_name));
+                            sizes.insert(file_name, file_size);
+                        },
+                        None => println!("Invalid file name encountered at {}", path.display()),
+                    }
+                },
+                Err(e) => println!("Failed to get metadata for {}: {}", path.display(), e),
+            }
             continue;
         }
 
@@ -69,22 +79,30 @@ pub fn run() {
             .min_depth(1)
             .max_depth(1)
             .into_iter()
-            .filter_map(Result::ok)
-            .for_each(|entry| {
-                let entry_path = entry.path();
-
-                if entry.file_type().is_file() {
-                    let file_size = entry.metadata().unwrap().len();
-                    let file_name = utils::truncate_filename(Path::new(entry_path.file_name().unwrap()));
-                    sizes.insert(file_name, file_size);
-                } else if entry.file_type().is_dir() {
-                    let dir_size = utils::dir_size(entry_path);
-                    let dir_name = entry_path
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                        .to_string();
-                    sizes.insert(dir_name + "/", dir_size);
+            .for_each(|entry_result| {
+                match entry_result {
+                    Ok(entry) => {
+                        let entry_path = entry.path();
+                        match entry_path.file_name().and_then(|n| n.to_str()) {
+                            Some(file_name) => {
+                                let file_name = utils::truncate_filename(Path::new(file_name));
+                                if entry.file_type().is_file() {
+                                    match entry.metadata() {
+                                        Ok(metadata) => {
+                                            let file_size = metadata.len();
+                                            sizes.insert(file_name, file_size);
+                                        }
+                                        Err(e) => println!("Failed to get metadata for {}: {}", entry_path.display(), e),
+                                    }
+                                } else if entry.file_type().is_dir() {
+                                    let dir_size = utils::dir_size(entry_path);
+                                    sizes.insert(file_name + "/", dir_size);
+                                }
+                            }
+                            None => println!("Invalid file name encountered at {}", entry_path.display()),
+                        }
+                    }
+                    Err(e) => println!("Error walking directory: {}", e),
                 }
             });
     }
@@ -134,8 +152,9 @@ pub fn run() {
             .set_header(vec!["Name", "Total", "Available"]);
         let disks = Disks::new_with_refreshed_list();
         for disk in &disks {
+            let disk_name = disk.name().to_str().unwrap_or("Invalid Disk Name");
             disk_table.add_row(vec![
-                disk.name().to_str().unwrap().to_string(),
+                disk_name.to_string(),
                 format_size(disk.total_space(), DECIMAL),
                 format_size(disk.available_space(), DECIMAL),
             ]);
