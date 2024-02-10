@@ -80,3 +80,42 @@ pub fn sort_by_name(sizes: &HashMap<String, u64>) -> Vec<(String, u64)> {
         .map(|(k, v)| (k.clone(), *v))
         .collect()
 }
+
+/// Truncate a filename to 15 characters
+/// 
+/// # Arguments 
+/// 
+/// * `path`: Path of the file
+/// 
+/// returns: String 
+/// 
+/// # Examples 
+/// 
+/// ```
+/// use std::path::Path;
+/// let path = Path::new("this_is_a_long_filename.txt");
+/// let truncated = fs_rs::utils::truncate_filename(path);
+/// ```
+pub fn truncate_filename(path: &Path) -> String {
+    // Extract the file stem (name without extension) and extension
+    let stem = path.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    let extension = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    // Check if the stem length exceeds 15 characters
+    let truncated_stem = if stem.len() > 15 {
+        format!("{}...", &stem[..15])
+    } else {
+        stem.to_string()
+    };
+
+    // Append the extension if present
+    if !extension.is_empty() {
+        format!("{}.{}", truncated_stem, extension)
+    } else {
+        truncated_stem
+    }
+}
