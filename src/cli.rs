@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use clap::{Parser, ArgAction};
+use clap::{Parser, ArgAction, Subcommand};
 use colored::Colorize;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
@@ -13,7 +13,7 @@ use walkdir::WalkDir;
 use crate::utils;
 
 /// CLI arguments
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Optional path to the files or folders
@@ -27,6 +27,14 @@ struct Args {
     /// Show disk usage
     #[arg(long, short, action = ArgAction::SetTrue)]
     disk_usage: bool,
+    
+    #[command(subcommand)]
+    commands: Option<Commands>
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Rm {name: Option<String>}
 }
 
 /// Run the CLI
