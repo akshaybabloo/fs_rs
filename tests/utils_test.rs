@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use tempfile::tempdir;
 
 use fs_rs::utils::dir_size;
@@ -69,5 +70,18 @@ fn test_sort_by_name() {
         sorted_vec, right,
         "Expected {:?}, but got {:?}",
         right, sorted_vec
+    );
+}
+
+#[test]
+fn test_truncate_filename() {
+    let path = Path::new("this_is_a_long_filename.txt");
+    let truncated = fs_rs::utils::truncate_filename(path);
+    let right = "this_is_a_long_....txt";
+
+    assert_eq!(
+        truncated, right,
+        "Expected {:?}, but got {:?}",
+        right, truncated
     );
 }

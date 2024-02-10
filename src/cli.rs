@@ -60,7 +60,7 @@ pub fn run() {
 
         if path.is_file() {
             let file_size = path.metadata().unwrap().len();
-            let file_name = path.file_name().unwrap().to_string_lossy().to_string();
+            let file_name = utils::truncate_filename(Path::new(path.file_name().unwrap()));
             sizes.insert(file_name, file_size);
             continue;
         }
@@ -75,11 +75,7 @@ pub fn run() {
 
                 if entry.file_type().is_file() {
                     let file_size = entry.metadata().unwrap().len();
-                    let file_name = entry_path
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                        .to_string();
+                    let file_name = utils::truncate_filename(Path::new(entry_path.file_name().unwrap()));
                     sizes.insert(file_name, file_size);
                 } else if entry.file_type().is_dir() {
                     let dir_size = utils::dir_size(entry_path);
