@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use clap::{Parser, ArgAction, Subcommand};
+use clap::{Parser, ArgAction};
 use colored::Colorize;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
@@ -28,14 +28,18 @@ struct Args {
     #[arg(long, short, action = ArgAction::SetTrue)]
     disk_usage: bool,
     
-    #[command(subcommand)]
-    commands: Option<Commands>
+    /// Set the depth of the directory search
+    #[arg(long, short, default_value = "100")]
+    depth: usize,
+    
+    // #[command(subcommand)]
+    // commands: Option<Commands>
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    Rm {name: Option<String>}
-}
+// #[derive(Subcommand)]
+// enum Commands {
+//     Rm {name: Option<String>}
+// }
 
 /// Run the CLI
 pub fn run() {
@@ -84,7 +88,7 @@ pub fn run() {
 
         WalkDir::new(path)
             .min_depth(1)
-            .max_depth(1)
+            .max_depth(cli.depth)
             .into_iter()
             .for_each(|entry_result| {
                 match entry_result {
