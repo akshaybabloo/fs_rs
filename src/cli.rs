@@ -6,7 +6,7 @@ use colored::Colorize;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
-use spinoff::{spinners, Color, Spinner, Streams};
+use spinoff::{spinners, Color, Spinner};
 use sysinfo::{Disks, System};
 use walkdir::WalkDir;
 
@@ -41,11 +41,10 @@ enum Commands {
 pub fn run() {
     let cli = Args::parse();
     let mut sizes: HashMap<String, u64> = HashMap::new();
-    let mut sp = Spinner::new_with_stream(
+    let mut sp = Spinner::new(
         spinners::Dots,
         "Computing...",
-        Color::Yellow,
-        Streams::Stderr,
+        Color::Yellow
     );
 
     for (index, input_path) in cli.path.iter().enumerate() {
