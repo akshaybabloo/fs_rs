@@ -23,5 +23,5 @@ comfy-table = "7.1.1"
 humansize = "2.1.3"
 spinoff = { version = "0.8.0", features = ["dots"] }
 sysinfo = "0.30.12"
-tempfile = "3.10.1"
+tempfile = "3.11.0"
 walkdir = { version = "2.5.0", features = [] }
