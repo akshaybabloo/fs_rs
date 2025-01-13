@@ -131,9 +131,14 @@ pub fn run() {
     } else {
         let sorted_names = utils::sort_by_name(&sizes);
         // Print the sizes values
-        for (root, size) in &sorted_names {
-            let sz = format_size(*size, DECIMAL);
-            table.add_row(vec![root, &sz]);
+        for (root, size) in sorted_names {
+            let sz = format_size(size, DECIMAL);
+
+            if root.ends_with("/") {
+                table.add_row(vec![root.yellow(), sz.yellow()]);
+            } else {
+                table.add_row(vec![root.blue(), sz.blue()]);
+            }
         }
     }
     sp.stop_with_message("");
