@@ -26,18 +26,7 @@ struct Args {
     /// Show disk usage
     #[arg(long, action = ArgAction::SetTrue)]
     disk_usage: bool,
-
-    /// Set the depth of the directory search
-    #[arg(long, short, default_value = "100")]
-    depth: usize,
-    // #[command(subcommand)]
-    // commands: Option<Commands>
 }
-
-// #[derive(Subcommand)]
-// enum Commands {
-//     Rm {name: Option<String>}
-// }
 
 /// Run the CLI
 pub fn run() {
