@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use clap::{Parser, ArgAction};
+use clap::{ArgAction, Parser};
 use colored::Colorize;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
 use spinoff::{spinners, Color, Spinner};
 use sysinfo::{Disks, System};
-use walkdir::WalkDir;
 
 use crate::utils;
 
@@ -25,13 +24,12 @@ struct Args {
     sort_by_size: bool,
 
     /// Show disk usage
-    #[arg(long, short, action = ArgAction::SetTrue)]
+    #[arg(long, action = ArgAction::SetTrue)]
     disk_usage: bool,
-    
+
     /// Set the depth of the directory search
     #[arg(long, short, default_value = "100")]
     depth: usize,
-    
     // #[command(subcommand)]
     // commands: Option<Commands>
 }
@@ -45,11 +43,7 @@ struct Args {
 pub fn run() {
     let cli = Args::parse();
     let mut sizes: HashMap<String, u64> = HashMap::new();
-    let mut sp = Spinner::new(
-        spinners::Dots,
-        "Computing...",
-        Color::Yellow
-    );
+    let mut sp = Spinner::new(spinners::Dots, "Computing...", Color::Yellow);
 
     for (index, input_path) in cli.path.iter().enumerate() {
         let path = Path::new(&input_path);
@@ -77,45 +71,46 @@ pub fn run() {
                         Some(file_name) => {
                             let file_name = utils::truncate_filename(Path::new(file_name));
                             sizes.insert(file_name, file_size);
-                        },
+                        }
                         None => println!("Invalid file name encountered at {}", path.display()),
                     }
-                },
+                }
                 Err(e) => println!("Failed to get metadata for {}: {}", path.display(), e),
             }
             continue;
         }
 
-        WalkDir::new(path)
-            .min_depth(1)
-            .max_depth(cli.depth)
-            .into_iter()
-            .for_each(|entry_result| {
-                match entry_result {
-                    Ok(entry) => {
-                        let entry_path = entry.path();
-                        match entry_path.file_name().and_then(|n| n.to_str()) {
-                            Some(file_name) => {
-                                let file_name = utils::truncate_filename(Path::new(file_name));
-                                if entry.file_type().is_file() {
-                                    match entry.metadata() {
-                                        Ok(metadata) => {
-                                            let file_size = metadata.len();
-                                            sizes.insert(file_name, file_size);
-                                        }
-                                        Err(e) => println!("Failed to get metadata for {}: {}", entry_path.display(), e),
+        // For directories, only process immediate children
+        for entry_result in std::fs::read_dir(path).unwrap() {
+            match entry_result {
+                Ok(entry) => {
+                    let entry_path = entry.path();
+                    match entry_path.file_name().and_then(|n| n.to_str()) {
+                        Some(file_name) => {
+                            let file_name = utils::truncate_filename(Path::new(file_name));
+                            if entry.file_type().unwrap().is_file() {
+                                match entry.metadata() {
+                                    Ok(metadata) => {
+                                        sizes.insert(file_name, metadata.len());
                                     }
-                                } else if entry.file_type().is_dir() {
-                                    let dir_size = utils::dir_size(entry_path);
-                                    sizes.insert(file_name + "/", dir_size);
+                                    Err(e) => println!(
+                                        "Failed to get metadata for {}: {}",
+                                        entry_path.display(),
+                                        e
+                                    ),
                                 }
+                            } else if entry.file_type().unwrap().is_dir() {
+                                sizes.insert(file_name + "/", utils::dir_size(&entry_path));
                             }
-                            None => println!("Invalid file name encountered at {}", entry_path.display()),
+                        }
+                        None => {
+                            println!("Invalid file name encountered at {}", entry_path.display())
                         }
                     }
-                    Err(e) => println!("Error walking directory: {}", e),
                 }
-            });
+                Err(e) => println!("Error reading directory entry: {}", e),
+            }
+        }
     }
 
     if sizes.is_empty() {
@@ -136,9 +131,14 @@ pub fn run() {
     } else {
         let sorted_names = utils::sort_by_name(&sizes);
         // Print the sizes values
-        for (root, size) in &sorted_names {
-            let sz = format_size(*size, DECIMAL);
-            table.add_row(vec![root, &sz]);
+        for (root, size) in sorted_names {
+            let sz = format_size(size, DECIMAL);
+
+            if root.ends_with("/") {
+                table.add_row(vec![root.yellow(), sz.yellow()]);
+            } else {
+                table.add_row(vec![root.blue(), sz.blue()]);
+            }
         }
     }
     sp.stop_with_message("");
