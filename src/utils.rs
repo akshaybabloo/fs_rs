@@ -1,6 +1,6 @@
 use std::collections::HashMap;
+use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 /// Get the size of a directory
 ///
@@ -17,14 +17,20 @@ use walkdir::WalkDir;
 /// let size = fs_rs::utils::dir_size(Path::new("/some/path"));
 /// ```
 pub fn dir_size(path: &Path) -> u64 {
-    WalkDir::new(path)
-        .min_depth(1)
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter_map(|e| e.metadata().ok())
-        .filter(|m| m.is_file())
-        .map(|m| m.len())
-        .sum()
+    let mut total_size = 0;
+    if let Ok(entries) = fs::read_dir(path) {
+        for entry in entries.filter_map(Result::ok) {
+            let path = entry.path();
+            if let Ok(metadata) = fs::metadata(&path) {
+                if metadata.is_file() {
+                    total_size += metadata.len();
+                } else if metadata.is_dir() {
+                    total_size += dir_size(&path);
+                }
+            }
+        }
+    }
+    total_size
 }
 
 /// Sort a HashMap by value
@@ -82,15 +88,15 @@ pub fn sort_by_name(sizes: &HashMap<String, u64>) -> Vec<(String, u64)> {
 }
 
 /// Truncate a filename to 15 characters
-/// 
-/// # Arguments 
-/// 
+///
+/// # Arguments
+///
 /// * `path`: Path of the file
-/// 
-/// returns: String 
-/// 
-/// # Examples 
-/// 
+///
+/// returns: String
+///
+/// # Examples
+///
 /// ```
 /// use std::path::Path;
 /// let path = Path::new("this_is_a_long_filename.txt");
@@ -98,12 +104,8 @@ pub fn sort_by_name(sizes: &HashMap<String, u64>) -> Vec<(String, u64)> {
 /// ```
 pub fn truncate_filename(path: &Path) -> String {
     // Extract the file stem (name without extension) and extension
-    let stem = path.file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
-    let extension = path.extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+    let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
     // Check if the stem length exceeds 15 characters
     let truncated_stem = if stem.len() > 15 {
