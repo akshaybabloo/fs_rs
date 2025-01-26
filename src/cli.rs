@@ -28,6 +28,23 @@ struct Args {
     disk_usage: bool,
 }
 
+/// Calculate the size of a directory
+fn calculate_dir_size(dir_path: &Path) -> u64 {
+    let mut total_size = 0;
+    if let Ok(entries) = std::fs::read_dir(dir_path) {
+        for entry in entries.flatten() {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_file() {
+                    total_size += metadata.len();
+                } else if metadata.is_dir() {
+                    total_size += calculate_dir_size(&entry.path());
+                }
+            }
+        }
+    }
+    total_size
+}
+
 /// Run the CLI
 pub fn run() {
     let cli = Args::parse();
@@ -38,14 +55,10 @@ pub fn run() {
         let path = Path::new(&input_path);
 
         if !path.exists() {
-            // Stop the spinner if it's the first index
             if index == 0 {
                 sp.stop_with_message("");
             }
-
             println!("{} {}", input_path.red().bold(), "does not exist".red());
-
-            // If on the last index of the path vector, return
             if index == cli.path.len() - 1 {
                 return;
             }
@@ -53,15 +66,13 @@ pub fn run() {
         }
 
         if path.is_file() {
+            // File handling remains the same
             match path.metadata() {
                 Ok(metadata) => {
                     let file_size = metadata.len();
-                    match path.file_name() {
-                        Some(file_name) => {
-                            let file_name = utils::truncate_filename(Path::new(file_name));
-                            sizes.insert(file_name, file_size);
-                        }
-                        None => println!("Invalid file name encountered at {}", path.display()),
+                    if let Some(file_name) = path.file_name() {
+                        let file_name = utils::truncate_filename(Path::new(file_name));
+                        sizes.insert(file_name, file_size);
                     }
                 }
                 Err(e) => println!("Failed to get metadata for {}: {}", path.display(), e),
@@ -69,35 +80,28 @@ pub fn run() {
             continue;
         }
 
-        // For directories, only process immediate children
-        for entry_result in std::fs::read_dir(path).unwrap() {
-            match entry_result {
-                Ok(entry) => {
+        // Process directory contents
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry_result in entries {
+                if let Ok(entry) = entry_result {
                     let entry_path = entry.path();
-                    match entry_path.file_name().and_then(|n| n.to_str()) {
-                        Some(file_name) => {
-                            let file_name = utils::truncate_filename(Path::new(file_name));
-                            if entry.file_type().unwrap().is_file() {
-                                match entry.metadata() {
-                                    Ok(metadata) => {
-                                        sizes.insert(file_name, metadata.len());
+                    if let Some(file_name) = entry_path.file_name().and_then(|n| n.to_str()) {
+                        let file_name = utils::truncate_filename(Path::new(file_name));
+                        match entry.file_type() {
+                            Ok(file_type) => {
+                                if file_type.is_file() {
+                                    if let Ok(metadata) = entry.metadata() {
+                                        sizes.insert(file_name.to_string(), metadata.len());
                                     }
-                                    Err(e) => println!(
-                                        "Failed to get metadata for {}: {}",
-                                        entry_path.display(),
-                                        e
-                                    ),
+                                } else if file_type.is_dir() {
+                                    let dir_size = calculate_dir_size(&entry_path);
+                                    sizes.insert(file_name.to_string() + "/", dir_size);
                                 }
-                            } else if entry.file_type().unwrap().is_dir() {
-                                sizes.insert(file_name + "/", utils::dir_size(&entry_path));
                             }
-                        }
-                        None => {
-                            println!("Invalid file name encountered at {}", entry_path.display())
+                            Err(e) => println!("Error getting file type: {}", e),
                         }
                     }
                 }
-                Err(e) => println!("Error reading directory entry: {}", e),
             }
         }
     }
