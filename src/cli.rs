@@ -130,7 +130,7 @@ pub fn run() {
             if root.ends_with("/") {
                 table.add_row(vec![root.yellow(), sz.yellow()]);
             } else {
-                table.add_row(vec![root.blue(), sz.blue()]);
+                table.add_row(vec![root.bright_blue(), sz.bright_blue()]);
             }
         }
     }
