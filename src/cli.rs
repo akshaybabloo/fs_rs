@@ -3,11 +3,11 @@ use std::path::Path;
 
 use clap::{ArgAction, Parser};
 use colored::Colorize;
-use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
-use humansize::{format_size, DECIMAL};
+use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
+use humansize::{DECIMAL, format_size};
 use rayon::prelude::*;
-use spinoff::{spinners, Color, Spinner};
+use spinoff::{Color, Spinner, spinners};
 use sysinfo::{Disks, System};
 
 use crate::utils;
