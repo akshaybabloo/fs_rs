@@ -1,5 +1,5 @@
 use colored::Colorize;
-use comfy_table::Table;
+use comfy_table::{Cell, Table};
 use humansize::{DECIMAL, format_size};
 use std::collections::HashMap;
 use std::fs;
@@ -130,10 +130,18 @@ pub fn add_row(table: &mut Table, sorted_sizes: Vec<(String, u64)>) {
     for (root, size) in sorted_sizes {
         let sz = format_size(size, DECIMAL);
 
-        if root.ends_with("/") {
-            table.add_row(vec![root.yellow(), sz.yellow()]);
+        let (name_cell, size_cell) = if root.ends_with("/") {
+            (
+                Cell::new(root.yellow().to_string()),
+                Cell::new(sz.yellow().to_string()),
+            )
         } else {
-            table.add_row(vec![root.bright_blue(), sz.bright_blue()]);
-        }
+            (
+                Cell::new(root.bright_blue().to_string()),
+                Cell::new(sz.bright_blue().to_string()),
+            )
+        };
+
+        table.add_row(vec![name_cell, size_cell]);
     }
 }
