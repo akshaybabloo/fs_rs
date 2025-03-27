@@ -27,6 +27,10 @@ struct Args {
     /// Show disk usage
     #[arg(long, action = ArgAction::SetTrue)]
     disk_usage: bool,
+
+    /// Show as JSON output
+    #[arg(long, action = ArgAction::SetTrue)]
+    json: bool,
 }
 
 /// Calculate the size of a directory in parallel
@@ -118,6 +122,20 @@ pub fn run() {
 
     if sizes.is_empty() {
         sp.stop_with_message("No files or folders found");
+        return;
+    }
+
+    // Output as JSON
+    if cli.json {
+        // Format values to decimal
+        let sizes: HashMap<String, String> = sizes
+            .into_iter()
+            .map(|(k, v)| (k, format_size(v, DECIMAL)))
+            .collect();
+
+        let json_output = serde_json::to_string(&sizes).unwrap();
+
+        sp.stop_with_message(&json_output);
         return;
     }
 
