@@ -94,24 +94,22 @@ pub fn run() {
 
         // Process directory contents
         if let Ok(entries) = std::fs::read_dir(path) {
-            for entry_result in entries {
-                if let Ok(entry) = entry_result {
-                    let entry_path = entry.path();
-                    if let Some(file_name) = entry_path.file_name().and_then(|n| n.to_str()) {
-                        let file_name = utils::truncate_filename(Path::new(file_name));
-                        match entry.file_type() {
-                            Ok(file_type) => {
-                                if file_type.is_file() {
-                                    if let Ok(metadata) = entry.metadata() {
-                                        sizes.insert(file_name.to_string(), metadata.len());
-                                    }
-                                } else if file_type.is_dir() {
-                                    let dir_size = calculate_dir_size(&entry_path);
-                                    sizes.insert(file_name.to_string() + "/", dir_size);
+            for entry in entries.flatten() {
+                let entry_path = entry.path();
+                if let Some(file_name) = entry_path.file_name().and_then(|n| n.to_str()) {
+                    let file_name = utils::truncate_filename(Path::new(file_name));
+                    match entry.file_type() {
+                        Ok(file_type) => {
+                            if file_type.is_file() {
+                                if let Ok(metadata) = entry.metadata() {
+                                    sizes.insert(file_name.to_string(), metadata.len());
                                 }
+                            } else if file_type.is_dir() {
+                                let dir_size = calculate_dir_size(&entry_path);
+                                sizes.insert(file_name.to_string() + "/", dir_size);
                             }
-                            Err(e) => println!("Error getting file type: {}", e),
                         }
+                        Err(e) => println!("Error getting file type: {}", e),
                     }
                 }
             }
