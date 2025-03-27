@@ -129,22 +129,10 @@ pub fn run() {
     // Sort the sizes values
     if cli.sort_by_size {
         let sorted_sizes = utils::sort_by_size(&sizes);
-        for (root, size) in sorted_sizes {
-            let sz = format_size(size, DECIMAL);
-            table.add_row(vec![root, sz]);
-        }
+        utils::add_row(&mut table, sorted_sizes);
     } else {
         let sorted_names = utils::sort_by_name(&sizes);
-        // Print the sizes values
-        for (root, size) in sorted_names {
-            let sz = format_size(size, DECIMAL);
-
-            if root.ends_with("/") {
-                table.add_row(vec![root.yellow(), sz.yellow()]);
-            } else {
-                table.add_row(vec![root.bright_blue(), sz.bright_blue()]);
-            }
-        }
+        utils::add_row(&mut table, sorted_names);
     }
     sp.stop_with_message("");
     println!("{table}");

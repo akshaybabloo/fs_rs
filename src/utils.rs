@@ -1,3 +1,6 @@
+use colored::Colorize;
+use comfy_table::Table;
+use humansize::{format_size, DECIMAL};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -119,5 +122,18 @@ pub fn truncate_filename(path: &Path) -> String {
         format!("{}.{}", truncated_stem, extension)
     } else {
         truncated_stem
+    }
+}
+
+/// Add a row to a table
+pub fn add_row(table: &mut Table, sorted_sizes: Vec<(String, u64)>) {
+    for (root, size) in sorted_sizes {
+        let sz = format_size(size, DECIMAL);
+
+        if root.ends_with("/") {
+            table.add_row(vec![root.yellow(), sz.yellow()]);
+        } else {
+            table.add_row(vec![root.bright_blue(), sz.bright_blue()]);
+        }
     }
 }
