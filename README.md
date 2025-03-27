@@ -26,6 +26,6 @@ fs_rs /path/to/folder1 /path/to/folder2
 
 - `-h` or `--help`: Get help
 - `-s` or `--sort-by-size`: Sort by size
-- `--disk-usages`: Get disk usages
+- `--disk-usage`: Get disk usages
 - `--json`: Get output in JSON format, prints to stdout
 - `--version`: Get version
