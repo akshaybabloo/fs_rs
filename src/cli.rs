@@ -6,6 +6,7 @@ use colored::Colorize;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use comfy_table::Table;
 use humansize::{format_size, DECIMAL};
+use rayon::prelude::*;
 use spinoff::{spinners, Color, Spinner};
 use sysinfo::{Disks, System};
 
@@ -28,21 +29,32 @@ struct Args {
     disk_usage: bool,
 }
 
-/// Calculate the size of a directory
+/// Calculate the size of a directory in parallel
 fn calculate_dir_size(dir_path: &Path) -> u64 {
-    let mut total_size = 0;
     if let Ok(entries) = std::fs::read_dir(dir_path) {
-        for entry in entries.flatten() {
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_file() {
-                    total_size += metadata.len();
-                } else if metadata.is_dir() {
-                    total_size += calculate_dir_size(&entry.path());
+        entries
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>() // Needed to collect before par_iter
+            .par_iter()
+            .map(|entry| {
+                let path = entry.path();
+                match entry.metadata() {
+                    Ok(metadata) => {
+                        if metadata.is_file() {
+                            metadata.len()
+                        } else if metadata.is_dir() {
+                            calculate_dir_size(&path)
+                        } else {
+                            0
+                        }
+                    }
+                    Err(_) => 0,
                 }
-            }
-        }
+            })
+            .sum()
+    } else {
+        0
     }
-    total_size
 }
 
 /// Run the CLI
