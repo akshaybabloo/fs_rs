@@ -17,7 +17,7 @@ categories = ["command-line-utilities"]
 #test = false
 
 [dependencies]
-clap = { version = "4.5.44", features = ["derive"] }
+clap = { version = "4.5.47", features = ["derive"] }
 colored = "3.0.0"
 comfy-table = "7.1.4"
 humansize = "2.1.3"
