@@ -1,9 +1,18 @@
 use colored::Colorize;
 use comfy_table::{Cell, Table};
 use humansize::{DECIMAL, format_size};
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+
+const MAX_FILENAME_LENGTH: usize = 25;
+
+/// Struct to hold sizes of files/directories
+#[derive(Clone, Debug, PartialEq)]
+pub struct Sizes {
+    pub name: String,
+    pub size: u64,
+    pub is_dir: bool,
+}
 
 /// Get the size of a directory
 ///
@@ -47,20 +56,16 @@ pub fn dir_size(path: &Path) -> u64 {
 /// # Examples
 ///
 /// ```
-/// use std::collections::HashMap;
-/// let mut sizes: HashMap<String, u64> = HashMap::new();
-/// sizes.insert("file1.txt".to_string(), 100);
-/// sizes.insert("file2.txt".to_string(), 200);
+/// let mut sizes: Vec<fs_rs::utils::Sizes> = Vec::new();
+/// sizes.push(fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false});
+/// sizes.push(fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false});
 ///
 /// let sorted_vec = fs_rs::utils::sort_by_size(&sizes);
 /// ```
-pub fn sort_by_size(sizes: &HashMap<String, u64>) -> Vec<(String, u64)> {
+pub fn sort_by_size(sizes: &[Sizes]) -> Vec<Sizes> {
     let mut sorted_vec: Vec<_> = sizes.iter().collect();
-    sorted_vec.sort_by(|a, b| b.1.cmp(a.1));
-    sorted_vec
-        .into_iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect()
+    sorted_vec.sort_by(|a, b| b.size.cmp(&a.size));
+    sorted_vec.into_iter().cloned().collect()
 }
 
 /// Sort a HashMap by key
@@ -74,23 +79,19 @@ pub fn sort_by_size(sizes: &HashMap<String, u64>) -> Vec<(String, u64)> {
 /// # Examples
 ///
 /// ```
-/// use std::collections::HashMap;
-/// let mut sizes: HashMap<String, u64> = HashMap::new();
-/// sizes.insert("file1.txt".to_string(), 100);
-/// sizes.insert("file2.txt".to_string(), 200);
+/// let mut sizes: Vec<fs_rs::utils::Sizes> = Vec::new();
+/// sizes.push(fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false});
+/// sizes.push(fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false});
 ///
 /// let sorted_vec = fs_rs::utils::sort_by_name(&sizes);
 /// ```
-pub fn sort_by_name(sizes: &HashMap<String, u64>) -> Vec<(String, u64)> {
+pub fn sort_by_name(sizes: &[Sizes]) -> Vec<Sizes> {
     let mut sorted_vec: Vec<_> = sizes.iter().collect();
-    sorted_vec.sort_by(|a, b| a.0.cmp(b.0));
-    sorted_vec
-        .into_iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect()
+    sorted_vec.sort_by(|a, b| a.name.cmp(&b.name));
+    sorted_vec.into_iter().cloned().collect()
 }
 
-/// Truncate a filename to 15 characters
+/// Truncate a filename to `MAX_FILENAME_LENGTH` characters
 ///
 /// # Arguments
 ///
@@ -110,9 +111,9 @@ pub fn truncate_filename(path: &Path) -> String {
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    // Check if the stem length exceeds 15 characters
-    let truncated_stem = if stem.len() > 15 {
-        format!("{}...", &stem[..15])
+    // Check if the stem length exceeds the maximum allowed length
+    let truncated_stem = if stem.len() > MAX_FILENAME_LENGTH {
+        format!("{}...", &stem[..MAX_FILENAME_LENGTH])
     } else {
         stem.to_string()
     };
@@ -126,19 +127,19 @@ pub fn truncate_filename(path: &Path) -> String {
 }
 
 /// Add a row to a table
-pub fn add_row(table: &mut Table, sorted_sizes: Vec<(String, u64)>) {
-    for (root, size) in sorted_sizes {
+pub fn add_row(table: &mut Table, values: Vec<Sizes>) {
+    for Sizes { name, size, is_dir } in values {
         let sz = format_size(size, DECIMAL);
 
-        let (name_cell, size_cell) = if root.ends_with("/") {
+        let (name_cell, size_cell) = if is_dir {
             (
-                Cell::new(root.yellow().to_string()),
-                Cell::new(sz.yellow().to_string()),
+                Cell::new(format!("{}/", name.blue().to_string())),
+                Cell::new(sz.blue().to_string()),
             )
         } else {
             (
-                Cell::new(root.bright_blue().to_string()),
-                Cell::new(sz.bright_blue().to_string()),
+                Cell::new(format!("{}*", name.green().to_string())),
+                Cell::new(sz.green().to_string()),
             )
         };
 

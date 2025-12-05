@@ -64,7 +64,7 @@ fn calculate_dir_size(dir_path: &Path) -> u64 {
 /// Run the CLI
 pub fn run() {
     let cli = Args::parse();
-    let mut sizes: HashMap<String, u64> = HashMap::new();
+    let mut sizes: Vec<utils::Sizes> = Vec::new();
     let mut sp = Spinner::new(spinners::Dots, "Computing...", Color::Yellow);
 
     for (index, input_path) in cli.path.iter().enumerate() {
@@ -88,7 +88,11 @@ pub fn run() {
                     let file_size = metadata.len();
                     if let Some(file_name) = path.file_name() {
                         let file_name = utils::truncate_filename(Path::new(file_name));
-                        sizes.insert(file_name, file_size);
+                        sizes.push(utils::Sizes {
+                            name: file_name.to_string(),
+                            size: file_size,
+                            is_dir: false,
+                        });
                     }
                 }
                 Err(e) => println!("Failed to get metadata for {}: {}", path.display(), e),
@@ -106,11 +110,19 @@ pub fn run() {
                         Ok(file_type) => {
                             if file_type.is_file() {
                                 if let Ok(metadata) = entry.metadata() {
-                                    sizes.insert(file_name.to_string(), metadata.len());
+                                    sizes.push(utils::Sizes {
+                                        name: file_name.to_string(),
+                                        size: metadata.len(),
+                                        is_dir: false,
+                                    });
                                 }
                             } else if file_type.is_dir() {
                                 let dir_size = calculate_dir_size(&entry_path);
-                                sizes.insert(file_name.to_string() + "/", dir_size);
+                                sizes.push(utils::Sizes {
+                                    name: file_name.to_string(),
+                                    size: dir_size,
+                                    is_dir: true,
+                                });
                             }
                         }
                         Err(e) => println!("Error getting file type: {}", e),
@@ -130,7 +142,7 @@ pub fn run() {
         // Format values to decimal
         let sizes: HashMap<String, String> = sizes
             .into_iter()
-            .map(|(k, v)| (k, format_size(v, DECIMAL)))
+            .map(|s| (s.name, format_size(s.size, DECIMAL)))
             .collect();
 
         let json_output = serde_json::to_string(&sizes).unwrap();
@@ -153,7 +165,7 @@ pub fn run() {
     sp.stop_with_message("");
     println!("{table}");
 
-    let total_size = sizes.values().sum::<u64>();
+    let total_size = sizes.iter().map(|s| s.size).sum::<u64>();
     let sz = format_size(total_size, DECIMAL);
     println!("\n{} {}", "Total size:".green(), sz.green().bold());
     println!(

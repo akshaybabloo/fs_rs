@@ -1,10 +1,9 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tempfile::tempdir;
 
-use fs_rs::utils::dir_size;
+use fs_rs::utils::{Sizes, dir_size};
 
 #[test]
 fn test_dir_size() {
@@ -33,51 +32,57 @@ fn test_dir_size() {
 
 #[test]
 fn test_sort_by_size() {
-    let left: HashMap<String, u64> = HashMap::from([
-        ("file1.txt".to_string(), 100),
-        ("file2.txt".to_string(), 200),
-    ]);
-
-    let right: Vec<(String, u64)> = vec![
-        ("file2.txt".to_string(), 200),
-        ("file1.txt".to_string(), 100),
+    let left = vec![
+        Sizes {
+            name: "file1.txt".to_string(),
+            size: 100,
+            is_dir: false,
+        },
+        Sizes {
+            name: "file2.txt".to_string(),
+            size: 200,
+            is_dir: false,
+        },
     ];
 
     let sorted_vec = fs_rs::utils::sort_by_size(&left);
 
-    assert_eq!(
-        sorted_vec, right,
-        "Expected {:?}, but got {:?}",
-        right, sorted_vec
-    );
+    assert_eq!(sorted_vec.len(), 2);
+    assert_eq!(sorted_vec[0].name, "file2.txt");
+    assert_eq!(sorted_vec[0].size, 200);
+    assert_eq!(sorted_vec[1].name, "file1.txt");
+    assert_eq!(sorted_vec[1].size, 100);
 }
 
 #[test]
 fn test_sort_by_name() {
-    let left: HashMap<String, u64> = HashMap::from([
-        ("file2.txt".to_string(), 200),
-        ("file1.txt".to_string(), 100),
-    ]);
-
-    let right: Vec<(String, u64)> = vec![
-        ("file1.txt".to_string(), 100),
-        ("file2.txt".to_string(), 200),
+    let left = vec![
+        Sizes {
+            name: "file2.txt".to_string(),
+            size: 200,
+            is_dir: false,
+        },
+        Sizes {
+            name: "file1.txt".to_string(),
+            size: 100,
+            is_dir: false,
+        },
     ];
 
     let sorted_vec = fs_rs::utils::sort_by_name(&left);
 
-    assert_eq!(
-        sorted_vec, right,
-        "Expected {:?}, but got {:?}",
-        right, sorted_vec
-    );
+    assert_eq!(sorted_vec.len(), 2);
+    assert_eq!(sorted_vec[0].name, "file1.txt");
+    assert_eq!(sorted_vec[0].size, 100);
+    assert_eq!(sorted_vec[1].name, "file2.txt");
+    assert_eq!(sorted_vec[1].size, 200);
 }
 
 #[test]
 fn test_truncate_filename() {
-    let path = Path::new("this_is_a_long_filename.txt");
+    let path = Path::new("this_is_a_long_filename_and_some_more_text_to_make_it_even_longer.txt");
     let truncated = fs_rs::utils::truncate_filename(path);
-    let right = "this_is_a_long_....txt";
+    let right = "this_is_a_long_filename_a....txt";
 
     assert_eq!(
         truncated, right,
