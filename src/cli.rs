@@ -88,7 +88,7 @@ pub fn run() {
                     let file_size = metadata.len();
                     if let Some(file_name) = path.file_name() {
                         let file_name = utils::truncate_filename(Path::new(file_name));
-                        sizes.push(utils::Sizes{
+                        sizes.push(utils::Sizes {
                             name: file_name.to_string(),
                             size: file_size,
                             is_dir: false,
@@ -110,7 +110,7 @@ pub fn run() {
                         Ok(file_type) => {
                             if file_type.is_file() {
                                 if let Ok(metadata) = entry.metadata() {
-                                    sizes.push(utils::Sizes{
+                                    sizes.push(utils::Sizes {
                                         name: file_name.to_string(),
                                         size: metadata.len(),
                                         is_dir: false,
@@ -118,7 +118,7 @@ pub fn run() {
                                 }
                             } else if file_type.is_dir() {
                                 let dir_size = calculate_dir_size(&entry_path);
-                                sizes.push(utils::Sizes{
+                                sizes.push(utils::Sizes {
                                     name: file_name.to_string(),
                                     size: dir_size,
                                     is_dir: true,

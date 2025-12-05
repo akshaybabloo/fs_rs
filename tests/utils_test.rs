@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::Path;
 use tempfile::tempdir;
 
-use fs_rs::utils::{dir_size, Sizes};
+use fs_rs::utils::{Sizes, dir_size};
 
 #[test]
 fn test_dir_size() {
@@ -80,9 +80,9 @@ fn test_sort_by_name() {
 
 #[test]
 fn test_truncate_filename() {
-    let path = Path::new("this_is_a_long_filename.txt");
+    let path = Path::new("this_is_a_long_filename_and_some_more_text_to_make_it_even_longer.txt");
     let truncated = fs_rs::utils::truncate_filename(path);
-    let right = "this_is_a_long_....txt";
+    let right = "this_is_a_long_filename_a....txt";
 
     assert_eq!(
         truncated, right,

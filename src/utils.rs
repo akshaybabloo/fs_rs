@@ -4,7 +4,10 @@ use humansize::{DECIMAL, format_size};
 use std::fs;
 use std::path::Path;
 
+const MAX_FILENAME_LENGTH: usize = 25;
+
 /// Struct to hold sizes of files/directories
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sizes {
     pub name: String,
     pub size: u64,
@@ -53,24 +56,16 @@ pub fn dir_size(path: &Path) -> u64 {
 /// # Examples
 ///
 /// ```
-/// use std::collections::HashMap;
 /// let mut sizes: Vec<fs_rs::utils::Sizes> = Vec::new();
 /// sizes.push(fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false});
 /// sizes.push(fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false});
 ///
 /// let sorted_vec = fs_rs::utils::sort_by_size(&sizes);
 /// ```
-pub fn sort_by_size(sizes: &Vec<Sizes>) -> Vec<Sizes> {
+pub fn sort_by_size(sizes: &[Sizes]) -> Vec<Sizes> {
     let mut sorted_vec: Vec<_> = sizes.iter().collect();
     sorted_vec.sort_by(|a, b| b.size.cmp(&a.size));
-    sorted_vec
-        .into_iter()
-        .map(|s| Sizes {
-            name: s.name.clone(),
-            size: s.size,
-            is_dir: s.is_dir,
-        })
-        .collect()
+    sorted_vec.into_iter().cloned().collect()
 }
 
 /// Sort a HashMap by key
@@ -84,27 +79,19 @@ pub fn sort_by_size(sizes: &Vec<Sizes>) -> Vec<Sizes> {
 /// # Examples
 ///
 /// ```
-/// use std::collections::HashMap;
 /// let mut sizes: Vec<fs_rs::utils::Sizes> = Vec::new();
 /// sizes.push(fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false});
 /// sizes.push(fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false});
 ///
 /// let sorted_vec = fs_rs::utils::sort_by_name(&sizes);
 /// ```
-pub fn sort_by_name(sizes: &Vec<Sizes>) -> Vec<Sizes> {
+pub fn sort_by_name(sizes: &[Sizes]) -> Vec<Sizes> {
     let mut sorted_vec: Vec<_> = sizes.iter().collect();
     sorted_vec.sort_by(|a, b| a.name.cmp(&b.name));
-    sorted_vec
-        .into_iter()
-        .map(|s| Sizes {
-            name: s.name.clone(),
-            size: s.size,
-            is_dir: s.is_dir,
-        })
-        .collect()
+    sorted_vec.into_iter().cloned().collect()
 }
 
-/// Truncate a filename to 15 characters
+/// Truncate a filename to `MAX_FILENAME_LENGTH` characters
 ///
 /// # Arguments
 ///
@@ -124,9 +111,9 @@ pub fn truncate_filename(path: &Path) -> String {
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    // Check if the stem length exceeds 15 characters
-    let truncated_stem = if stem.len() > 15 {
-        format!("{}...", &stem[..15])
+    // Check if the stem length exceeds the maximum allowed length
+    let truncated_stem = if stem.len() > MAX_FILENAME_LENGTH {
+        format!("{}...", &stem[..MAX_FILENAME_LENGTH])
     } else {
         stem.to_string()
     };
@@ -146,12 +133,12 @@ pub fn add_row(table: &mut Table, values: Vec<Sizes>) {
 
         let (name_cell, size_cell) = if is_dir {
             (
-                Cell::new(name.blue().to_string()+"/"),
+                Cell::new(format!("{}/", name.blue().to_string())),
                 Cell::new(sz.blue().to_string()),
             )
         } else {
             (
-                Cell::new(name.green().to_string()+"*"),
+                Cell::new(format!("{}*", name.green().to_string())),
                 Cell::new(sz.green().to_string()),
             )
         };
