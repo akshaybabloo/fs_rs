@@ -100,8 +100,8 @@ jobs:
   
   publish-crate:
     needs: build
-    runs-on: ubuntu-22.04
-    if: github.event_name == 'release' && github.event.action == 'created'
+    runs-on: ubuntu-24.04
+    if: (github.event_name == 'release' && github.event.action == 'created') || github.ref_type == 'tag'
 
     steps:
     - uses: actions/checkout@v6
@@ -120,7 +120,7 @@ jobs:
   upload-release-assets:
     needs: build
     runs-on: ubuntu-24.04
-    if: github.event_name == 'release' && github.event.action == 'created'
+    if: (github.event_name == 'release' && github.event.action == 'created') || github.ref_type == 'tag'
 
     steps:
     - name: Download artifact
