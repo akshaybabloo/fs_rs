@@ -127,6 +127,7 @@ jobs:
       uses: actions/download-artifact@v7
       with:
         pattern: fs_rs-*
+        merge-multiple: true
         path: ./artifacts
 
     - name: Upload release asset
