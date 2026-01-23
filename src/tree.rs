@@ -16,7 +16,12 @@ struct TreeNode {
 }
 
 /// Recursively collect all files and directories with their sizes
-fn collect_entries(path: &Path, base_path: &Path, depth: usize, max_depth: usize) -> Vec<(String, u64, bool)> {
+fn collect_entries(
+    path: &Path,
+    base_path: &Path,
+    depth: usize,
+    max_depth: usize,
+) -> Vec<(String, u64, bool)> {
     if depth > max_depth {
         return vec![];
     }
@@ -46,7 +51,8 @@ fn collect_entries(path: &Path, base_path: &Path, depth: usize, max_depth: usize
                         local_entries.push((relative_path.clone(), dir_size, true));
 
                         if depth < max_depth {
-                            let sub_entries = collect_entries(&entry_path, base_path, depth + 1, max_depth);
+                            let sub_entries =
+                                collect_entries(&entry_path, base_path, depth + 1, max_depth);
                             local_entries.extend(sub_entries);
                         }
                     }
@@ -97,7 +103,11 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
 
     for (i, (name, child)) in children.iter().enumerate() {
         let is_last_child = i == children.len() - 1;
-        let branch = if is_last_child { branch_last } else { branch_mid };
+        let branch = if is_last_child {
+            branch_last
+        } else {
+            branch_mid
+        };
         let size_str = format_size(child.size, DECIMAL);
 
         let formatted_line = if child.is_dir {
@@ -110,10 +120,11 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
             )
         } else {
             format!(
-                "{}{}{}  ({})\n",
+                "{}{}{}{}  ({})\n",
                 prefix,
                 branch,
                 name.green(),
+                "*".green(),
                 size_str.green()
             )
         };

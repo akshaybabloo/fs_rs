@@ -3,10 +3,10 @@ use std::io::Write;
 use std::path::Path;
 use tempfile::tempdir;
 
-use fs_rs::utils::{Sizes, dir_size};
+use fs_rs::utils::{Sizes, calculate_dir_size};
 
 #[test]
-fn test_dir_size() {
+fn test_calculate_dir_size() {
     let dir = tempdir().expect("Failed to create a temporary directory");
     let file_path1 = dir.path().join("file1.txt");
     let file_path2 = dir.path().join("file2.txt");
@@ -17,7 +17,11 @@ fn test_dir_size() {
     writeln!(file1, "Hello").expect("Failed to write to file1");
     writeln!(file2, "Hello, Rust!").expect("Failed to write to file2");
 
-    let size = dir_size(dir.path());
+    // Close file handles before calculating size (required on Windows)
+    drop(file1);
+    drop(file2);
+
+    let size = calculate_dir_size(dir.path());
 
     // The size may vary
     assert!(
@@ -90,3 +94,4 @@ fn test_truncate_filename() {
         right, truncated
     );
 }
+

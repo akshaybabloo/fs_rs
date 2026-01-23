@@ -3,14 +3,15 @@ use std::path::Path;
 
 use clap::{ArgAction, Parser};
 use colored::Colorize;
+use colored::control::set_override;
 use comfy_table::Table;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use humansize::{DECIMAL, format_size};
 use spinoff::{Color, Spinner, spinners};
 use sysinfo::Disks;
 
-use crate::utils;
 use crate::tree;
+use crate::utils;
 
 /// CLI arguments
 #[derive(Parser)]
@@ -43,11 +44,20 @@ struct Args {
     /// Use ASCII characters for tree representation instead of Unicode
     #[arg(long, action = ArgAction::SetTrue)]
     ascii: bool,
+
+    /// Disable colored output
+    #[arg(long, action = ArgAction::SetTrue)]
+    no_color: bool,
 }
 
 /// Run the CLI
 pub fn run() {
     let cli = Args::parse();
+
+    if cli.no_color {
+        set_override(false);
+    }
+
     let mut sp = Spinner::new(spinners::Dots, "Computing...", Color::Yellow);
 
     // Handle tree mode separately
