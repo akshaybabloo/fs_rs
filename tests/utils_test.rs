@@ -17,6 +17,10 @@ fn test_calculate_dir_size() {
     writeln!(file1, "Hello").expect("Failed to write to file1");
     writeln!(file2, "Hello, Rust!").expect("Failed to write to file2");
 
+    // Close file handles before calculating size (required on Windows)
+    drop(file1);
+    drop(file2);
+
     let size = calculate_dir_size(dir.path());
 
     // The size may vary

@@ -22,6 +22,14 @@ pub struct Sizes {
 /// * `dir_path`: Path to the directory
 ///
 /// returns: u64 - The size of the directory in bytes
+/// 
+/// # Examples
+/// 
+/// ```
+/// use std::path::Path;
+/// let dir_path = Path::new("/some/directory");
+/// let size = fs_rs::utils::calculate_dir_size(dir_path);
+/// ```
 pub fn calculate_dir_size(dir_path: &Path) -> u64 {
     fs::read_dir(dir_path)
         .map(|entries| {
