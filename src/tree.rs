@@ -110,10 +110,11 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
             )
         } else {
             format!(
-                "{}{}{}  ({})\n",
+                "{}{}{}{}  ({})\n",
                 prefix,
                 branch,
                 name.green(),
+                "*".green(),
                 size_str.green()
             )
         };
