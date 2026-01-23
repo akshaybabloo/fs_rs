@@ -9,8 +9,8 @@ use humansize::{DECIMAL, format_size};
 use spinoff::{Color, Spinner, spinners};
 use sysinfo::Disks;
 
-use crate::utils;
 use crate::tree;
+use crate::utils;
 
 /// CLI arguments
 #[derive(Parser)]
