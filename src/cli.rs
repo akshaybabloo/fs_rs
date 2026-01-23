@@ -48,30 +48,22 @@ struct Args {
 
 /// Calculate the size of a directory in parallel
 fn calculate_dir_size(dir_path: &Path) -> u64 {
-    if let Ok(entries) = std::fs::read_dir(dir_path) {
-        entries
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>() // Needed to collect before par_iter
-            .par_iter()
-            .map(|entry| {
-                let path = entry.path();
-                match entry.metadata() {
-                    Ok(metadata) => {
-                        if metadata.is_file() {
-                            metadata.len()
-                        } else if metadata.is_dir() {
-                            calculate_dir_size(&path)
-                        } else {
-                            0
-                        }
+    std::fs::read_dir(dir_path)
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .par_bridge()
+                .map(|entry| {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        calculate_dir_size(&path)
+                    } else {
+                        entry.metadata().map(|m| m.len()).unwrap_or(0)
                     }
-                    Err(_) => 0,
-                }
-            })
-            .sum()
-    } else {
-        0
-    }
+                })
+                .sum()
+        })
+        .unwrap_or(0)
 }
 
 /// Run the CLI
