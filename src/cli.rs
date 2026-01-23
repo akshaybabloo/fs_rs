@@ -11,6 +11,7 @@ use spinoff::{Color, Spinner, spinners};
 use sysinfo::{Disks, System};
 
 use crate::utils;
+use crate::tree;
 
 /// CLI arguments
 #[derive(Parser)]
@@ -31,6 +32,18 @@ struct Args {
     /// Show as JSON output
     #[arg(long, action = ArgAction::SetTrue)]
     json: bool,
+
+    /// Show tree representation
+    #[arg(long, short, action = ArgAction::SetTrue)]
+    tree: bool,
+
+    /// Depth of the tree representation. Only applicable if --tree is set. Defaults to unlimited depth.
+    #[arg(long, short, action = ArgAction::Set)]
+    depth: Option<usize>,
+
+    /// Use ASCII characters for tree representation instead of Unicode
+    #[arg(long, action = ArgAction::SetTrue)]
+    ascii: bool,
 }
 
 /// Calculate the size of a directory in parallel
@@ -64,8 +77,24 @@ fn calculate_dir_size(dir_path: &Path) -> u64 {
 /// Run the CLI
 pub fn run() {
     let cli = Args::parse();
-    let mut sizes: Vec<utils::Sizes> = Vec::new();
     let mut sp = Spinner::new(spinners::Dots, "Computing...", Color::Yellow);
+
+    // Handle tree mode separately
+    if cli.tree {
+        for input_path in cli.path.iter() {
+            let path = Path::new(&input_path);
+            if !path.exists() {
+                sp.stop_with_message("");
+                println!("{} {}", input_path.red().bold(), "does not exist".red());
+                continue;
+            }
+            sp.stop_with_message("");
+            print!("{}", tree::generate_tree(path, cli.depth, cli.ascii));
+        }
+        return;
+    }
+
+    let mut sizes: Vec<utils::Sizes> = Vec::new();
 
     for (index, input_path) in cli.path.iter().enumerate() {
         let path = Path::new(&input_path);
