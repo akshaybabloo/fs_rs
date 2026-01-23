@@ -6,9 +6,8 @@ use colored::Colorize;
 use comfy_table::Table;
 use comfy_table::presets::{ASCII_MARKDOWN, NOTHING};
 use humansize::{DECIMAL, format_size};
-use rayon::prelude::*;
 use spinoff::{Color, Spinner, spinners};
-use sysinfo::{Disks, System};
+use sysinfo::Disks;
 
 use crate::utils;
 use crate::tree;
@@ -44,26 +43,6 @@ struct Args {
     /// Use ASCII characters for tree representation instead of Unicode
     #[arg(long, action = ArgAction::SetTrue)]
     ascii: bool,
-}
-
-/// Calculate the size of a directory in parallel
-fn calculate_dir_size(dir_path: &Path) -> u64 {
-    std::fs::read_dir(dir_path)
-        .map(|entries| {
-            entries
-                .filter_map(Result::ok)
-                .par_bridge()
-                .map(|entry| {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        calculate_dir_size(&path)
-                    } else {
-                        entry.metadata().map(|m| m.len()).unwrap_or(0)
-                    }
-                })
-                .sum()
-        })
-        .unwrap_or(0)
 }
 
 /// Run the CLI
@@ -138,7 +117,7 @@ pub fn run() {
                                     });
                                 }
                             } else if file_type.is_dir() {
-                                let dir_size = calculate_dir_size(&entry_path);
+                                let dir_size = utils::calculate_dir_size(&entry_path);
                                 sizes.push(utils::Sizes {
                                     name: file_name.to_string(),
                                     size: dir_size,
@@ -197,9 +176,6 @@ pub fn run() {
 
     if cli.disk_usage {
         let mut disk_table = Table::new();
-        let mut sys = System::new_all();
-        // First we update all information of our `System` struct.
-        sys.refresh_all();
         disk_table
             .load_preset(ASCII_MARKDOWN)
             .set_header(vec!["Name", "Total", "Available"]);

@@ -1,6 +1,7 @@
 use colored::Colorize;
 use comfy_table::{Cell, Table};
 use humansize::{DECIMAL, format_size};
+use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 
@@ -43,6 +44,32 @@ pub fn dir_size(path: &Path) -> u64 {
         }
     }
     total_size
+}
+
+/// Calculate directory size in parallel
+///
+/// # Arguments
+///
+/// * `dir_path`: Path to the directory
+///
+/// returns: u64 - The size of the directory in bytes
+pub fn calculate_dir_size(dir_path: &Path) -> u64 {
+    fs::read_dir(dir_path)
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .par_bridge()
+                .map(|entry| {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        calculate_dir_size(&path)
+                    } else {
+                        entry.metadata().map(|m| m.len()).unwrap_or(0)
+                    }
+                })
+                .sum()
+        })
+        .unwrap_or(0)
 }
 
 /// Sort a HashMap by value

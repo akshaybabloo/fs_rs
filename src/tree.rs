@@ -5,6 +5,8 @@ use colored::Colorize;
 use humansize::{DECIMAL, format_size};
 use rayon::prelude::*;
 
+use crate::utils;
+
 /// A node in the tree structure
 #[derive(Debug, Default)]
 struct TreeNode {
@@ -40,7 +42,7 @@ fn collect_entries(path: &Path, base_path: &Path, depth: usize, max_depth: usize
                     if metadata.is_file() {
                         local_entries.push((relative_path, metadata.len(), false));
                     } else if metadata.is_dir() {
-                        let dir_size = calculate_dir_size(&entry_path);
+                        let dir_size = utils::calculate_dir_size(&entry_path);
                         local_entries.push((relative_path.clone(), dir_size, true));
 
                         if depth < max_depth {
@@ -59,34 +61,6 @@ fn collect_entries(path: &Path, base_path: &Path, depth: usize, max_depth: usize
     entries
 }
 
-/// Calculate directory size (same as in cli.rs)
-fn calculate_dir_size(dir_path: &Path) -> u64 {
-    if let Ok(entries) = std::fs::read_dir(dir_path) {
-        entries
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>()
-            .par_iter()
-            .map(|entry| {
-                let path = entry.path();
-                match entry.metadata() {
-                    Ok(metadata) => {
-                        if metadata.is_file() {
-                            metadata.len()
-                        } else if metadata.is_dir() {
-                            calculate_dir_size(&path)
-                        } else {
-                            0
-                        }
-                    }
-                    Err(_) => 0,
-                }
-            })
-            .sum()
-    } else {
-        0
-    }
-}
-
 /// Build a tree structure from flat paths
 fn build_tree(entries: Vec<(String, u64, bool)>) -> TreeNode {
     let mut root = TreeNode::default();
@@ -96,10 +70,9 @@ fn build_tree(entries: Vec<(String, u64, bool)>) -> TreeNode {
         let mut current = &mut root;
 
         for (i, part) in parts.iter().enumerate() {
-            let is_last = i == parts.len() - 1;
             current = current.children.entry(part.to_string()).or_default();
 
-            if is_last {
+            if i == parts.len() - 1 {
                 current.size = size;
                 current.is_dir = is_dir;
             }
@@ -117,7 +90,7 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
     children.sort_by(|a, b| a.0.cmp(b.0));
 
     let (branch_last, branch_mid, pipe) = if ascii {
-        ("\\-- ", "+-- ", "|   ")
+        ("`-- ", "+-- ", "|   ")
     } else {
         ("└── ", "├── ", "│   ")
     };
