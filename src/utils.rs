@@ -15,37 +15,6 @@ pub struct Sizes {
     pub is_dir: bool,
 }
 
-/// Get the size of a directory
-///
-/// # Arguments
-///
-/// * `path`: Absolute path to the directory
-///
-/// returns: u64 - The size of the directory in bytes
-///
-/// # Examples
-///
-/// ```
-/// use std::path::Path;
-/// let size = fs_rs::utils::dir_size(Path::new("/some/path"));
-/// ```
-pub fn dir_size(path: &Path) -> u64 {
-    let mut total_size = 0;
-    if let Ok(entries) = fs::read_dir(path) {
-        for entry in entries.filter_map(Result::ok) {
-            let path = entry.path();
-            if let Ok(metadata) = fs::metadata(&path) {
-                if metadata.is_file() {
-                    total_size += metadata.len();
-                } else if metadata.is_dir() {
-                    total_size += dir_size(&path);
-                }
-            }
-        }
-    }
-    total_size
-}
-
 /// Calculate directory size in parallel
 ///
 /// # Arguments
