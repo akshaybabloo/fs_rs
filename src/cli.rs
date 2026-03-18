@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::Path;
 
 use clap::{ArgAction, Parser};
@@ -34,15 +33,15 @@ struct Args {
     json: bool,
 
     /// Show tree representation
-    #[arg(long, short, action = ArgAction::SetTrue)]
+    #[arg(long, short, action = ArgAction::SetTrue, conflicts_with_all = ["sort_by_size", "disk_usage", "json"])]
     tree: bool,
 
     /// Depth of the tree representation. Only applicable if --tree is set. Defaults to unlimited depth.
-    #[arg(long, short, action = ArgAction::Set)]
+    #[arg(long, short, action = ArgAction::Set, requires = "tree")]
     depth: Option<usize>,
 
     /// Use ASCII characters for tree representation instead of Unicode
-    #[arg(long, action = ArgAction::SetTrue)]
+    #[arg(long, action = ArgAction::SetTrue, requires = "tree")]
     ascii: bool,
 
     /// Disable colored output
@@ -58,18 +57,29 @@ pub fn run() {
         set_override(false);
     }
 
-    let mut sp = Spinner::new(spinners::Dots, "Computing...", Color::Yellow);
+    // Skip spinner for JSON mode — it writes control characters to stdout
+    let mut sp = if cli.json {
+        None
+    } else {
+        Some(Spinner::new(spinners::Dots, "Computing...", Color::Yellow))
+    };
+
+    let stop_spinner = |sp: &mut Option<Spinner>| {
+        if let Some(mut spinner) = sp.take() {
+            spinner.stop_with_message("");
+        }
+    };
 
     // Handle tree mode separately
     if cli.tree {
         for input_path in cli.path.iter() {
             let path = Path::new(&input_path);
             if !path.exists() {
-                sp.stop_with_message("");
+                stop_spinner(&mut sp);
                 println!("{} {}", input_path.red().bold(), "does not exist".red());
                 continue;
             }
-            sp.stop_with_message("");
+            stop_spinner(&mut sp);
             print!("{}", tree::generate_tree(path, cli.depth, cli.ascii));
         }
         return;
@@ -82,7 +92,7 @@ pub fn run() {
 
         if !path.exists() {
             if index == 0 {
-                sp.stop_with_message("");
+                stop_spinner(&mut sp);
             }
             println!("{} {}", input_path.red().bold(), "does not exist".red());
             if index == cli.path.len() - 1 {
@@ -92,7 +102,6 @@ pub fn run() {
         }
 
         if path.is_file() {
-            // File handling remains the same
             match path.metadata() {
                 Ok(metadata) => {
                     let file_size = metadata.len();
@@ -143,36 +152,44 @@ pub fn run() {
     }
 
     if sizes.is_empty() {
-        sp.stop_with_message("No files or folders found");
+        stop_spinner(&mut sp);
+        eprintln!("No files or folders found");
         return;
+    }
+
+    // Sort
+    if cli.sort_by_size {
+        utils::sort_by_size(&mut sizes);
+    } else {
+        utils::sort_by_name(&mut sizes);
     }
 
     // Output as JSON
     if cli.json {
-        // Format values to decimal
-        let sizes: HashMap<String, String> = sizes
-            .into_iter()
-            .map(|s| (s.name, format_size(s.size, DECIMAL)))
+        let json_entries: Vec<serde_json::Value> = sizes
+            .iter()
+            .map(|s| {
+                serde_json::json!({
+                    "name": s.name,
+                    "size_bytes": s.size,
+                    "size_human": format_size(s.size, DECIMAL),
+                    "is_dir": s.is_dir,
+                })
+            })
             .collect();
 
-        let json_output = serde_json::to_string(&sizes).unwrap();
-
-        sp.stop_with_message(&json_output);
+        match serde_json::to_string(&json_entries) {
+            Ok(json_output) => println!("{json_output}"),
+            Err(e) => eprintln!("Failed to serialize JSON: {e}"),
+        }
         return;
     }
 
     let mut table = Table::new();
     table.load_preset(NOTHING).set_width(80);
 
-    // Sort the sizes values
-    if cli.sort_by_size {
-        let sorted_sizes = utils::sort_by_size(&sizes);
-        utils::add_row(&mut table, sorted_sizes);
-    } else {
-        let sorted_names = utils::sort_by_name(&sizes);
-        utils::add_row(&mut table, sorted_names);
-    }
-    sp.stop_with_message("");
+    utils::add_row(&mut table, &sizes);
+    stop_spinner(&mut sp);
     println!("{table}");
 
     let total_size = sizes.iter().map(|s| s.size).sum::<u64>();
@@ -191,7 +208,7 @@ pub fn run() {
             .set_header(vec!["Name", "Total", "Available"]);
         let disks = Disks::new_with_refreshed_list();
         for disk in &disks {
-            let disk_name = disk.name().to_str().unwrap_or("Invalid Disk Name");
+            let disk_name = disk.name().to_str().unwrap_or("Unknown");
             disk_table.add_row(vec![
                 disk_name.to_string(),
                 format_size(disk.total_space(), DECIMAL),

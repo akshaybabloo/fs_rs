@@ -15,16 +15,16 @@ pub struct Sizes {
     pub is_dir: bool,
 }
 
-/// Calculate directory size in parallel
+/// Calculate directory size in parallel, skipping symlinks
 ///
 /// # Arguments
 ///
 /// * `dir_path`: Path to the directory
 ///
 /// returns: u64 - The size of the directory in bytes
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use std::path::Path;
 /// let dir_path = Path::new("/some/directory");
@@ -37,9 +37,15 @@ pub fn calculate_dir_size(dir_path: &Path) -> u64 {
                 .filter_map(Result::ok)
                 .par_bridge()
                 .map(|entry| {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        calculate_dir_size(&path)
+                    let file_type = match entry.file_type() {
+                        Ok(ft) => ft,
+                        Err(_) => return 0,
+                    };
+                    if file_type.is_symlink() {
+                        return 0;
+                    }
+                    if file_type.is_dir() {
+                        calculate_dir_size(&entry.path())
                     } else {
                         entry.metadata().map(|m| m.len()).unwrap_or(0)
                     }
@@ -49,50 +55,46 @@ pub fn calculate_dir_size(dir_path: &Path) -> u64 {
         .unwrap_or(0)
 }
 
-/// Sort a HashMap by value
+/// Sort sizes by size in descending order (in-place)
 ///
 /// # Arguments
 ///
-/// * `sizes`: A HashMap of file/directory names and their sizes
-///
-/// returns: Vec<(String, u64), Global>
+/// * `sizes`: A mutable slice of Sizes
 ///
 /// # Examples
 ///
 /// ```
-/// let mut sizes: Vec<fs_rs::utils::Sizes> = Vec::new();
-/// sizes.push(fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false});
-/// sizes.push(fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false});
+/// let mut sizes = vec![
+///     fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false},
+///     fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false},
+/// ];
 ///
-/// let sorted_vec = fs_rs::utils::sort_by_size(&sizes);
+/// fs_rs::utils::sort_by_size(&mut sizes);
+/// assert_eq!(sizes[0].size, 200);
 /// ```
-pub fn sort_by_size(sizes: &[Sizes]) -> Vec<Sizes> {
-    let mut sorted_vec: Vec<_> = sizes.iter().collect();
-    sorted_vec.sort_by(|a, b| b.size.cmp(&a.size));
-    sorted_vec.into_iter().cloned().collect()
+pub fn sort_by_size(sizes: &mut [Sizes]) {
+    sizes.sort_by(|a, b| b.size.cmp(&a.size));
 }
 
-/// Sort a HashMap by key
+/// Sort sizes by name in ascending order (in-place)
 ///
 /// # Arguments
 ///
-/// * `sizes`: A HashMap of file/directory names and their sizes
-///
-/// returns: Vec<(String, u64), Global>
+/// * `sizes`: A mutable slice of Sizes
 ///
 /// # Examples
 ///
 /// ```
-/// let mut sizes: Vec<fs_rs::utils::Sizes> = Vec::new();
-/// sizes.push(fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false});
-/// sizes.push(fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false});
+/// let mut sizes = vec![
+///     fs_rs::utils::Sizes{name: "file2.txt".to_string(), size: 200, is_dir: false},
+///     fs_rs::utils::Sizes{name: "file1.txt".to_string(), size: 100, is_dir: false},
+/// ];
 ///
-/// let sorted_vec = fs_rs::utils::sort_by_name(&sizes);
+/// fs_rs::utils::sort_by_name(&mut sizes);
+/// assert_eq!(sizes[0].name, "file1.txt");
 /// ```
-pub fn sort_by_name(sizes: &[Sizes]) -> Vec<Sizes> {
-    let mut sorted_vec: Vec<_> = sizes.iter().collect();
-    sorted_vec.sort_by(|a, b| a.name.cmp(&b.name));
-    sorted_vec.into_iter().cloned().collect()
+pub fn sort_by_name(sizes: &mut [Sizes]) {
+    sizes.sort_by(|a, b| a.name.cmp(&b.name));
 }
 
 /// Truncate a filename to `MAX_FILENAME_LENGTH` characters
@@ -130,19 +132,19 @@ pub fn truncate_filename(path: &Path) -> String {
     }
 }
 
-/// Add a row to a table
-pub fn add_row(table: &mut Table, values: Vec<Sizes>) {
-    for Sizes { name, size, is_dir } in values {
-        let sz = format_size(size, DECIMAL);
+/// Add rows to a table from a slice of Sizes
+pub fn add_row(table: &mut Table, values: &[Sizes]) {
+    for s in values {
+        let sz = format_size(s.size, DECIMAL);
 
-        let (name_cell, size_cell) = if is_dir {
+        let (name_cell, size_cell) = if s.is_dir {
             (
-                Cell::new(format!("{}/", name.blue().to_string())),
+                Cell::new(format!("{}/", s.name.blue())),
                 Cell::new(sz.blue().to_string()),
             )
         } else {
             (
-                Cell::new(format!("{}*", name.green().to_string())),
+                Cell::new(format!("{}*", s.name.green())),
                 Cell::new(sz.green().to_string()),
             )
         };

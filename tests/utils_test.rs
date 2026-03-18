@@ -36,7 +36,7 @@ fn test_calculate_dir_size() {
 
 #[test]
 fn test_sort_by_size() {
-    let left = vec![
+    let mut sizes = vec![
         Sizes {
             name: "file1.txt".to_string(),
             size: 100,
@@ -49,18 +49,18 @@ fn test_sort_by_size() {
         },
     ];
 
-    let sorted_vec = fs_rs::utils::sort_by_size(&left);
+    fs_rs::utils::sort_by_size(&mut sizes);
 
-    assert_eq!(sorted_vec.len(), 2);
-    assert_eq!(sorted_vec[0].name, "file2.txt");
-    assert_eq!(sorted_vec[0].size, 200);
-    assert_eq!(sorted_vec[1].name, "file1.txt");
-    assert_eq!(sorted_vec[1].size, 100);
+    assert_eq!(sizes.len(), 2);
+    assert_eq!(sizes[0].name, "file2.txt");
+    assert_eq!(sizes[0].size, 200);
+    assert_eq!(sizes[1].name, "file1.txt");
+    assert_eq!(sizes[1].size, 100);
 }
 
 #[test]
 fn test_sort_by_name() {
-    let left = vec![
+    let mut sizes = vec![
         Sizes {
             name: "file2.txt".to_string(),
             size: 200,
@@ -73,13 +73,13 @@ fn test_sort_by_name() {
         },
     ];
 
-    let sorted_vec = fs_rs::utils::sort_by_name(&left);
+    fs_rs::utils::sort_by_name(&mut sizes);
 
-    assert_eq!(sorted_vec.len(), 2);
-    assert_eq!(sorted_vec[0].name, "file1.txt");
-    assert_eq!(sorted_vec[0].size, 100);
-    assert_eq!(sorted_vec[1].name, "file2.txt");
-    assert_eq!(sorted_vec[1].size, 200);
+    assert_eq!(sizes.len(), 2);
+    assert_eq!(sizes[0].name, "file1.txt");
+    assert_eq!(sizes[0].size, 100);
+    assert_eq!(sizes[1].name, "file2.txt");
+    assert_eq!(sizes[1].size, 200);
 }
 
 #[test]

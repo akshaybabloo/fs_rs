@@ -7,6 +7,9 @@ use rayon::prelude::*;
 
 use crate::utils;
 
+/// A flat entry: (relative_path, size_in_bytes, is_directory)
+type Entry = (String, u64, bool);
+
 /// A node in the tree structure
 #[derive(Debug, Default)]
 struct TreeNode {
@@ -15,60 +18,83 @@ struct TreeNode {
     children: BTreeMap<String, TreeNode>,
 }
 
-/// Recursively collect all files and directories with their sizes
+/// Recursively collect all files and directories with their sizes.
+///
+/// Returns `(entries, total_size)` where entries is a flat list of
+/// `(relative_path, size, is_dir)` tuples and total_size is the sum of
+/// all content under `path`. This avoids double-traversal by computing
+/// directory sizes from the recursive results rather than calling
+/// `calculate_dir_size` separately.
 fn collect_entries(
     path: &Path,
     base_path: &Path,
     depth: usize,
     max_depth: usize,
-) -> Vec<(String, u64, bool)> {
+) -> (Vec<Entry>, u64) {
     if depth > max_depth {
-        return vec![];
+        return (vec![], 0);
     }
 
-    let mut entries = vec![];
+    let read_dir = match std::fs::read_dir(path) {
+        Ok(rd) => rd,
+        Err(_) => return (vec![], 0),
+    };
 
-    if let Ok(read_dir) = std::fs::read_dir(path) {
-        let dir_entries: Vec<_> = read_dir.filter_map(Result::ok).collect();
+    let dir_entries: Vec<_> = read_dir.filter_map(Result::ok).collect();
 
-        let results: Vec<_> = dir_entries
-            .par_iter()
-            .flat_map(|entry| {
-                let entry_path = entry.path();
-                let relative_path = entry_path
-                    .strip_prefix(base_path)
-                    .unwrap_or(&entry_path)
-                    .to_string_lossy()
-                    .to_string();
+    let results: Vec<(Vec<Entry>, u64)> = dir_entries
+        .par_iter()
+        .map(|entry| {
+            let file_type = match entry.file_type() {
+                Ok(ft) => ft,
+                Err(_) => return (vec![], 0),
+            };
 
-                let mut local_entries = vec![];
+            if file_type.is_symlink() {
+                return (vec![], 0);
+            }
 
-                if let Ok(metadata) = entry.metadata() {
-                    if metadata.is_file() {
-                        local_entries.push((relative_path, metadata.len(), false));
-                    } else if metadata.is_dir() {
-                        let dir_size = utils::calculate_dir_size(&entry_path);
-                        local_entries.push((relative_path.clone(), dir_size, true));
+            let entry_path = entry.path();
+            let relative_path = entry_path
+                .strip_prefix(base_path)
+                .unwrap_or(&entry_path)
+                .to_string_lossy()
+                .to_string();
 
-                        if depth < max_depth {
-                            let sub_entries =
-                                collect_entries(&entry_path, base_path, depth + 1, max_depth);
-                            local_entries.extend(sub_entries);
-                        }
-                    }
+            if file_type.is_file() {
+                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                (vec![(relative_path, size, false)], size)
+            } else if file_type.is_dir() {
+                if depth < max_depth {
+                    // Recurse: collect children and derive size from them
+                    let (sub_entries, dir_size) =
+                        collect_entries(&entry_path, base_path, depth + 1, max_depth);
+                    let mut entries = vec![(relative_path, dir_size, true)];
+                    entries.extend(sub_entries);
+                    (entries, dir_size)
+                } else {
+                    // At max depth: compute size without expanding children
+                    let dir_size = utils::calculate_dir_size(&entry_path);
+                    (vec![(relative_path, dir_size, true)], dir_size)
                 }
-                local_entries
-            })
-            .collect();
+            } else {
+                (vec![], 0)
+            }
+        })
+        .collect();
 
-        entries.extend(results);
+    let mut all_entries = Vec::new();
+    let mut total_size = 0u64;
+    for (entries, size) in results {
+        all_entries.extend(entries);
+        total_size += size;
     }
 
-    entries
+    (all_entries, total_size)
 }
 
 /// Build a tree structure from flat paths
-fn build_tree(entries: Vec<(String, u64, bool)>) -> TreeNode {
+fn build_tree(entries: &[Entry]) -> TreeNode {
     let mut root = TreeNode::default();
 
     for (path, size, is_dir) in entries {
@@ -79,8 +105,8 @@ fn build_tree(entries: Vec<(String, u64, bool)>) -> TreeNode {
             current = current.children.entry(part.to_string()).or_default();
 
             if i == parts.len() - 1 {
-                current.size = size;
-                current.is_dir = is_dir;
+                current.size = *size;
+                current.is_dir = *is_dir;
             }
         }
     }
@@ -157,7 +183,7 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
 /// * A String representing the tree structure.
 pub fn generate_tree(path: &Path, depth: Option<usize>, ascii: bool) -> String {
     let max_depth = depth.unwrap_or(usize::MAX);
-    let entries = collect_entries(path, path, 1, max_depth);
-    let tree = build_tree(entries);
+    let (entries, _) = collect_entries(path, path, 1, max_depth);
+    let tree = build_tree(&entries);
     render_tree(&tree, "", ascii)
 }
