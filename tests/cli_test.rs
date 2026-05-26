@@ -20,8 +20,8 @@ fn test_default_output_contains_filename_and_total() {
     assert!(stdout.contains("test.txt"), "should list the file");
     assert!(stdout.contains("Total size:"), "should show total");
     assert!(
-        stdout.contains("Number of files:"),
-        "should show file count"
+        stdout.contains("Number of entries:"),
+        "should show entry count"
     );
 }
 
@@ -293,6 +293,15 @@ fn test_by_files_conflicts_with_tree() {
     assert!(
         !output.status.success(),
         "--tree and --by-files should conflict"
+    );
+}
+
+#[test]
+fn test_by_folder_conflicts_with_tree() {
+    let output = fs_rs().arg("--tree").arg("--by-folder").output().unwrap();
+    assert!(
+        !output.status.success(),
+        "--tree and --by-folder should conflict"
     );
 }
 

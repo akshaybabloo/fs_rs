@@ -225,9 +225,16 @@ pub fn run() {
     let total_size = sizes.iter().map(|s| s.size).sum::<u64>();
     let sz = format_size(total_size, DECIMAL);
     println!("\n{} {}", "Total size:".green(), sz.green().bold());
+    let count_label = if cli.by_folder {
+        "Number of folders:"
+    } else if cli.by_files {
+        "Number of files:"
+    } else {
+        "Number of entries:"
+    };
     println!(
         "{} {}\n",
-        "Number of files:".green(),
+        count_label.green(),
         sizes.len().to_string().green().bold()
     );
 
