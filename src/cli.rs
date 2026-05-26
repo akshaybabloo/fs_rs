@@ -33,8 +33,16 @@ struct Args {
     json: bool,
 
     /// Show tree representation
-    #[arg(long, short, action = ArgAction::SetTrue, conflicts_with_all = ["sort_by_size", "disk_usage", "json"])]
+    #[arg(long, short, action = ArgAction::SetTrue, conflicts_with_all = ["sort_by_size", "disk_usage", "json", "by_files", "by_folder"])]
     tree: bool,
+
+    /// Show only files (omit directories from the listing)
+    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "by_folder")]
+    by_files: bool,
+
+    /// Show only folders (omit files from the listing)
+    #[arg(long, action = ArgAction::SetTrue)]
+    by_folder: bool,
 
     /// Depth of the tree representation. Only applicable if --tree is set. Defaults to unlimited depth.
     #[arg(long, short, action = ArgAction::Set, requires = "tree")]
@@ -165,6 +173,12 @@ pub fn run() {
                 }
             }
         }
+    }
+
+    if cli.by_files {
+        sizes.retain(|s| !s.is_dir);
+    } else if cli.by_folder {
+        sizes.retain(|s| s.is_dir);
     }
 
     if sizes.is_empty() {
