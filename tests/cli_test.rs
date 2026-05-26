@@ -11,16 +11,9 @@ fn fs_rs() -> Command {
 fn test_default_output_contains_filename_and_total() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.txt");
-    File::create(&file)
-        .unwrap()
-        .write_all(b"hello")
-        .unwrap();
+    File::create(&file).unwrap().write_all(b"hello").unwrap();
 
-    let output = fs_rs()
-        .arg(dir.path())
-        .arg("--no-color")
-        .output()
-        .unwrap();
+    let output = fs_rs().arg(dir.path()).arg("--no-color").output().unwrap();
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -126,11 +119,7 @@ fn test_nonexistent_path_shows_error() {
 
 #[test]
 fn test_tree_conflicts_with_json() {
-    let output = fs_rs()
-        .arg("--tree")
-        .arg("--json")
-        .output()
-        .unwrap();
+    let output = fs_rs().arg("--tree").arg("--json").output().unwrap();
 
     assert!(
         !output.status.success(),
@@ -150,6 +139,89 @@ fn test_tree_conflicts_with_sort_by_size() {
         !output.status.success(),
         "--tree and --sort-by-size should conflict"
     );
+}
+
+#[test]
+fn test_ignore_excludes_named_entries() {
+    let dir = tempdir().unwrap();
+    let kept = dir.path().join("kept.txt");
+    let skipped = dir.path().join("skipme.txt");
+    File::create(&kept).unwrap().write_all(b"k").unwrap();
+    File::create(&skipped).unwrap().write_all(b"s").unwrap();
+
+    let output = fs_rs()
+        .arg(dir.path())
+        .arg("--ignore")
+        .arg("skipme.txt")
+        .arg("--no-color")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("kept.txt"));
+    assert!(!stdout.contains("skipme.txt"));
+}
+
+#[test]
+fn test_ignore_excludes_subdir_from_size() {
+    let dir = tempdir().unwrap();
+    let nested = dir.path().join("node_modules");
+    fs::create_dir(&nested).unwrap();
+    File::create(nested.join("big.bin"))
+        .unwrap()
+        .write_all(&[b'x'; 2048])
+        .unwrap();
+    File::create(dir.path().join("tiny.txt"))
+        .unwrap()
+        .write_all(b"t")
+        .unwrap();
+
+    let output = fs_rs()
+        .arg(dir.path())
+        .arg("--ignore")
+        .arg("node_modules")
+        .arg("--json")
+        .arg("--no-color")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let parsed: Vec<serde_json::Value> = serde_json::from_str(stdout.trim()).unwrap();
+    let names: Vec<&str> = parsed.iter().map(|e| e["name"].as_str().unwrap()).collect();
+    assert!(names.contains(&"tiny.txt"));
+    assert!(!names.contains(&"node_modules"));
+}
+
+#[test]
+fn test_ignore_in_tree_mode() {
+    let dir = tempdir().unwrap();
+    let nested = dir.path().join("ignored_dir");
+    fs::create_dir(&nested).unwrap();
+    File::create(nested.join("hidden.txt"))
+        .unwrap()
+        .write_all(b"x")
+        .unwrap();
+    File::create(dir.path().join("visible.txt"))
+        .unwrap()
+        .write_all(b"y")
+        .unwrap();
+
+    let output = fs_rs()
+        .arg(dir.path())
+        .arg("--tree")
+        .arg("--ignore")
+        .arg("ignored_dir")
+        .arg("--no-color")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("visible.txt"));
+    assert!(!stdout.contains("ignored_dir"));
+    assert!(!stdout.contains("hidden.txt"));
 }
 
 #[test]

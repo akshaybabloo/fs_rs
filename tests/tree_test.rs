@@ -25,12 +25,12 @@ fn test_generate_tree() {
     drop(file1);
     drop(file2);
 
-    let tree = generate_tree(dir.path(), None, false);
+    let tree = generate_tree(dir.path(), None, false, &[]);
 
     assert!(tree.contains("file1.txt"));
     assert!(tree.contains("file2.txt"));
 
-    let tree_ascii = generate_tree(dir.path(), None, true);
+    let tree_ascii = generate_tree(dir.path(), None, true, &[]);
 
     assert!(tree_ascii.contains("file1.txt"));
     assert!(tree_ascii.contains("file2.txt"));

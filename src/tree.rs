@@ -30,6 +30,7 @@ fn collect_entries(
     base_path: &Path,
     depth: usize,
     max_depth: usize,
+    ignore: &[String],
 ) -> (Vec<Entry>, u64) {
     if depth > max_depth {
         return (vec![], 0);
@@ -54,6 +55,12 @@ fn collect_entries(
                 return (vec![], 0);
             }
 
+            if let Some(name) = entry.file_name().to_str()
+                && utils::is_ignored(name, ignore)
+            {
+                return (vec![], 0);
+            }
+
             let entry_path = entry.path();
             let relative_path = entry_path
                 .strip_prefix(base_path)
@@ -68,13 +75,13 @@ fn collect_entries(
                 if depth < max_depth {
                     // Recurse: collect children and derive size from them
                     let (sub_entries, dir_size) =
-                        collect_entries(&entry_path, base_path, depth + 1, max_depth);
+                        collect_entries(&entry_path, base_path, depth + 1, max_depth, ignore);
                     let mut entries = vec![(relative_path, dir_size, true)];
                     entries.extend(sub_entries);
                     (entries, dir_size)
                 } else {
                     // At max depth: compute size without expanding children
-                    let dir_size = utils::calculate_dir_size(&entry_path);
+                    let dir_size = utils::calculate_dir_size_with_ignore(&entry_path, ignore);
                     (vec![(relative_path, dir_size, true)], dir_size)
                 }
             } else {
@@ -177,13 +184,14 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
 /// * `path` - The path to generate tree for.
 /// * `depth` - An optional depth limit for the tree representation.
 /// * `ascii` - Whether to use ASCII characters instead of Unicode.
+/// * `ignore` - File/directory names to omit from the tree.
 ///
 /// # Returns
 ///
 /// * A String representing the tree structure.
-pub fn generate_tree(path: &Path, depth: Option<usize>, ascii: bool) -> String {
+pub fn generate_tree(path: &Path, depth: Option<usize>, ascii: bool, ignore: &[String]) -> String {
     let max_depth = depth.unwrap_or(usize::MAX);
-    let (entries, _) = collect_entries(path, path, 1, max_depth);
+    let (entries, _) = collect_entries(path, path, 1, max_depth, ignore);
     let tree = build_tree(&entries);
     render_tree(&tree, "", ascii)
 }
