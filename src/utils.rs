@@ -148,11 +148,14 @@ pub fn truncate_filename(path: &Path) -> String {
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    let truncated_stem = if stem.len() > MAX_FILENAME_LENGTH {
-        let prefix_len = MAX_FILENAME_LENGTH / 2;
-        let suffix_len = MAX_FILENAME_LENGTH - prefix_len;
-        let prefix = &stem[..prefix_len];
-        let suffix = &stem[stem.len() - suffix_len..];
+    let stem_chars: Vec<char> = stem.chars().collect();
+    let truncated_stem = if stem_chars.len() > MAX_FILENAME_LENGTH {
+        const SEP_LEN: usize = 3;
+        let available = MAX_FILENAME_LENGTH - SEP_LEN;
+        let prefix_len = available / 2;
+        let suffix_len = available - prefix_len;
+        let prefix: String = stem_chars[..prefix_len].iter().collect();
+        let suffix: String = stem_chars[stem_chars.len() - suffix_len..].iter().collect();
         format!("{}...{}", prefix, suffix)
     } else {
         stem.to_string()
