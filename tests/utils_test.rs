@@ -126,3 +126,62 @@ fn test_truncate_filename() {
         right, truncated
     );
 }
+
+#[test]
+fn test_truncate_filename_short() {
+    let path = Path::new("short.txt");
+    assert_eq!(fs_rs::utils::truncate_filename(path), "short.txt");
+}
+
+#[test]
+fn test_truncate_filename_no_extension() {
+    // Short, no extension: returned verbatim.
+    let path = Path::new("just_a_filename");
+    assert_eq!(fs_rs::utils::truncate_filename(path), "just_a_filename");
+
+    // Long, no extension: stem still truncated, no trailing dot.
+    let long = "a".repeat(60);
+    let truncated = fs_rs::utils::truncate_filename(Path::new(&long));
+    // 21 + "..." + 21 = 45 visible chars, with exactly 3 dots from the separator.
+    assert_eq!(truncated.chars().count(), 45);
+    assert_eq!(truncated.matches('.').count(), 3);
+    assert_eq!(truncated, format!("{}...{}", "a".repeat(21), "a".repeat(21)));
+}
+
+#[test]
+fn test_truncate_filename_exact_boundary() {
+    // Stem exactly MAX_FILENAME_LENGTH (45) chars — must NOT be truncated.
+    let stem = "a".repeat(45);
+    let name = format!("{}.txt", stem);
+    let truncated = fs_rs::utils::truncate_filename(Path::new(&name));
+    assert_eq!(truncated, name);
+    assert!(!truncated.contains("..."));
+}
+
+#[test]
+fn test_truncate_filename_utf8() {
+    // CJK: each `日` is 3 bytes; 50 chars × 3 = 150 bytes. Byte-slicing
+    // would have panicked on a non-boundary index; char-slicing must not.
+    let cjk = "日".repeat(50);
+    let name = format!("{}.txt", cjk);
+    let truncated = fs_rs::utils::truncate_filename(Path::new(&name));
+    let expected_stem = format!("{}...{}", "日".repeat(21), "日".repeat(21));
+    assert_eq!(truncated, format!("{}.txt", expected_stem));
+    assert_eq!(truncated.chars().count(), 45 + 4); // stem + ".txt"
+
+    // Emoji: 4 bytes per char.
+    let emoji = "😀".repeat(50);
+    let name2 = format!("{}.png", emoji);
+    let truncated2 = fs_rs::utils::truncate_filename(Path::new(&name2));
+    let expected2 = format!("{}...{}", "😀".repeat(21), "😀".repeat(21));
+    assert_eq!(truncated2, format!("{}.png", expected2));
+    assert_eq!(truncated2.chars().count(), 45 + 4);
+
+    // Accented (precomposed NFC é = 2 bytes).
+    let acc = "é".repeat(50);
+    let name3 = format!("{}.md", acc);
+    let truncated3 = fs_rs::utils::truncate_filename(Path::new(&name3));
+    let expected3 = format!("{}...{}", "é".repeat(21), "é".repeat(21));
+    assert_eq!(truncated3, format!("{}.md", expected3));
+    assert_eq!(truncated3.chars().count(), 45 + 3);
+}
