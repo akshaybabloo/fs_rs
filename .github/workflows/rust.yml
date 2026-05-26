@@ -92,7 +92,7 @@ jobs:
         Compress-Archive -Path package/* -DestinationPath ${{ matrix.asset_name }}.zip
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.asset_name }}.${{ matrix.archive_ext }}
         path: ${{ matrix.asset_name }}.${{ matrix.archive_ext }}
@@ -124,14 +124,14 @@ jobs:
 
     steps:
     - name: Download artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         pattern: fs_rs-*
         merge-multiple: true
         path: ./artifacts
 
     - name: Upload release asset
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: ./artifacts/*
         tag_name: ${{ github.ref_name }}
