@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::Path;
 use tempfile::tempdir;
 
-use fs_rs::utils::{Sizes, calculate_dir_size};
+use fs_rs::utils::{Sizes, calculate_dir_size, calculate_dir_size_with_ignore, is_ignored};
 
 #[test]
 fn test_calculate_dir_size() {
@@ -83,6 +83,38 @@ fn test_sort_by_name() {
 }
 
 #[test]
+fn test_is_ignored() {
+    let patterns = vec!["target".to_string(), ".git".to_string()];
+    assert!(is_ignored("target", &patterns));
+    assert!(is_ignored(".git", &patterns));
+    assert!(!is_ignored("src", &patterns));
+    assert!(!is_ignored("", &patterns));
+    assert!(!is_ignored("target", &[]));
+}
+
+#[test]
+fn test_calculate_dir_size_with_ignore_skips_subdir() {
+    let dir = tempdir().expect("Failed to create a temporary directory");
+    let keep = dir.path().join("keep.txt");
+    let mut keep_file = File::create(&keep).expect("Failed to create keep.txt");
+    writeln!(keep_file, "keep").expect("write");
+    drop(keep_file);
+
+    let ignored_dir = dir.path().join("node_modules");
+    std::fs::create_dir(&ignored_dir).expect("create ignored dir");
+    let ignored_file = ignored_dir.join("big.bin");
+    let mut big = File::create(&ignored_file).expect("create big");
+    big.write_all(&[0u8; 4096]).expect("write big");
+    drop(big);
+
+    let with_ignore = calculate_dir_size_with_ignore(dir.path(), &["node_modules".to_string()]);
+    let without_ignore = calculate_dir_size(dir.path());
+
+    assert!(without_ignore >= with_ignore + 4096);
+    assert!(with_ignore < 100, "only keep.txt should be counted");
+}
+
+#[test]
 fn test_truncate_filename() {
     let path = Path::new("this_is_a_long_filename_and_some_more_text_to_make_it_even_longer.txt");
     let truncated = fs_rs::utils::truncate_filename(path);
@@ -94,4 +126,3 @@ fn test_truncate_filename() {
         right, truncated
     );
 }
-

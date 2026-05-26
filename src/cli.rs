@@ -47,6 +47,10 @@ struct Args {
     /// Disable colored output
     #[arg(long, action = ArgAction::SetTrue)]
     no_color: bool,
+
+    /// Ignore a file or folder by name when calculating sizes. Repeat to ignore multiple names.
+    #[arg(long, short = 'i', value_name = "NAME", action = ArgAction::Append)]
+    ignore: Vec<String>,
 }
 
 /// Run the CLI
@@ -80,7 +84,10 @@ pub fn run() {
                 continue;
             }
             stop_spinner(&mut sp);
-            print!("{}", tree::generate_tree(path, cli.depth, cli.ascii));
+            print!(
+                "{}",
+                tree::generate_tree(path, cli.depth, cli.ascii, &cli.ignore)
+            );
         }
         return;
     }
@@ -106,6 +113,11 @@ pub fn run() {
                 Ok(metadata) => {
                     let file_size = metadata.len();
                     if let Some(file_name) = path.file_name() {
+                        if let Some(name_str) = file_name.to_str()
+                            && utils::is_ignored(name_str, &cli.ignore)
+                        {
+                            continue;
+                        }
                         let file_name = utils::truncate_filename(Path::new(file_name));
                         sizes.push(utils::Sizes {
                             name: file_name.to_string(),
@@ -124,6 +136,9 @@ pub fn run() {
             for entry in entries.flatten() {
                 let entry_path = entry.path();
                 if let Some(file_name) = entry_path.file_name().and_then(|n| n.to_str()) {
+                    if utils::is_ignored(file_name, &cli.ignore) {
+                        continue;
+                    }
                     let file_name = utils::truncate_filename(Path::new(file_name));
                     match entry.file_type() {
                         Ok(file_type) => {
@@ -136,7 +151,8 @@ pub fn run() {
                                     });
                                 }
                             } else if file_type.is_dir() {
-                                let dir_size = utils::calculate_dir_size(&entry_path);
+                                let dir_size =
+                                    utils::calculate_dir_size_with_ignore(&entry_path, &cli.ignore);
                                 sizes.push(utils::Sizes {
                                     name: file_name.to_string(),
                                     size: dir_size,
