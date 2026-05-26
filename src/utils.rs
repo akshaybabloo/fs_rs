@@ -5,7 +5,7 @@ use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 
-const MAX_FILENAME_LENGTH: usize = 25;
+const MAX_FILENAME_LENGTH: usize = 45;
 
 /// Struct to hold sizes of files/directories
 #[derive(Clone, Debug, PartialEq)]
