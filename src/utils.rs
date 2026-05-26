@@ -128,7 +128,8 @@ pub fn sort_by_name(sizes: &mut [Sizes]) {
     sizes.sort_by(|a, b| a.name.cmp(&b.name));
 }
 
-/// Truncate a filename to `MAX_FILENAME_LENGTH` characters
+/// Truncate a filename so the stem fits within `MAX_FILENAME_LENGTH` visible
+/// characters by removing the middle, keeping both the start and end intact.
 ///
 /// # Arguments
 ///
@@ -144,18 +145,19 @@ pub fn sort_by_name(sizes: &mut [Sizes]) {
 /// let truncated = fs_rs::utils::truncate_filename(path);
 /// ```
 pub fn truncate_filename(path: &Path) -> String {
-    // Extract the file stem (name without extension) and extension
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    // Check if the stem length exceeds the maximum allowed length
     let truncated_stem = if stem.len() > MAX_FILENAME_LENGTH {
-        format!("{}...", &stem[..MAX_FILENAME_LENGTH])
+        let prefix_len = MAX_FILENAME_LENGTH / 2;
+        let suffix_len = MAX_FILENAME_LENGTH - prefix_len;
+        let prefix = &stem[..prefix_len];
+        let suffix = &stem[stem.len() - suffix_len..];
+        format!("{}...{}", prefix, suffix)
     } else {
         stem.to_string()
     };
 
-    // Append the extension if present
     if !extension.is_empty() {
         format!("{}.{}", truncated_stem, extension)
     } else {

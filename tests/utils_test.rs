@@ -118,7 +118,7 @@ fn test_calculate_dir_size_with_ignore_skips_subdir() {
 fn test_truncate_filename() {
     let path = Path::new("this_is_a_long_filename_and_some_more_text_to_make_it_even_longer.txt");
     let truncated = fs_rs::utils::truncate_filename(path);
-    let right = "this_is_a_long_filename_a....txt";
+    let right = "this_is_a_lo...t_even_longer.txt";
 
     assert_eq!(
         truncated, right,
