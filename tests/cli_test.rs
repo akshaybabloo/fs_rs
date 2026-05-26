@@ -20,8 +20,8 @@ fn test_default_output_contains_filename_and_total() {
     assert!(stdout.contains("test.txt"), "should list the file");
     assert!(stdout.contains("Total size:"), "should show total");
     assert!(
-        stdout.contains("Number of files:"),
-        "should show file count"
+        stdout.contains("Number of entries:"),
+        "should show entry count"
     );
 }
 
@@ -222,6 +222,87 @@ fn test_ignore_in_tree_mode() {
     assert!(stdout.contains("visible.txt"));
     assert!(!stdout.contains("ignored_dir"));
     assert!(!stdout.contains("hidden.txt"));
+}
+
+#[test]
+fn test_by_files_excludes_folders() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join("subdir")).unwrap();
+    File::create(dir.path().join("file.txt"))
+        .unwrap()
+        .write_all(b"hi")
+        .unwrap();
+
+    let output = fs_rs()
+        .arg(dir.path())
+        .arg("--by-files")
+        .arg("--json")
+        .arg("--no-color")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let parsed: Vec<serde_json::Value> = serde_json::from_str(stdout.trim()).unwrap();
+    assert_eq!(parsed.len(), 1);
+    assert_eq!(parsed[0]["name"], "file.txt");
+    assert_eq!(parsed[0]["is_dir"], false);
+}
+
+#[test]
+fn test_by_folder_excludes_files() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join("subdir")).unwrap();
+    File::create(dir.path().join("file.txt"))
+        .unwrap()
+        .write_all(b"hi")
+        .unwrap();
+
+    let output = fs_rs()
+        .arg(dir.path())
+        .arg("--by-folder")
+        .arg("--json")
+        .arg("--no-color")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let parsed: Vec<serde_json::Value> = serde_json::from_str(stdout.trim()).unwrap();
+    assert_eq!(parsed.len(), 1);
+    assert_eq!(parsed[0]["name"], "subdir");
+    assert_eq!(parsed[0]["is_dir"], true);
+}
+
+#[test]
+fn test_by_files_and_by_folder_conflict() {
+    let output = fs_rs()
+        .arg("--by-files")
+        .arg("--by-folder")
+        .output()
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "--by-files and --by-folder should conflict"
+    );
+}
+
+#[test]
+fn test_by_files_conflicts_with_tree() {
+    let output = fs_rs().arg("--tree").arg("--by-files").output().unwrap();
+    assert!(
+        !output.status.success(),
+        "--tree and --by-files should conflict"
+    );
+}
+
+#[test]
+fn test_by_folder_conflicts_with_tree() {
+    let output = fs_rs().arg("--tree").arg("--by-folder").output().unwrap();
+    assert!(
+        !output.status.success(),
+        "--tree and --by-folder should conflict"
+    );
 }
 
 #[test]

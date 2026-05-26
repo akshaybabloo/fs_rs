@@ -33,8 +33,16 @@ struct Args {
     json: bool,
 
     /// Show tree representation
-    #[arg(long, short, action = ArgAction::SetTrue, conflicts_with_all = ["sort_by_size", "disk_usage", "json"])]
+    #[arg(long, short, action = ArgAction::SetTrue, conflicts_with_all = ["sort_by_size", "disk_usage", "json", "by_files", "by_folder"])]
     tree: bool,
+
+    /// Show only files (omit directories from the listing)
+    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "by_folder")]
+    by_files: bool,
+
+    /// Show only folders (omit files from the listing)
+    #[arg(long, action = ArgAction::SetTrue)]
+    by_folder: bool,
 
     /// Depth of the tree representation. Only applicable if --tree is set. Defaults to unlimited depth.
     #[arg(long, short, action = ArgAction::Set, requires = "tree")]
@@ -167,6 +175,12 @@ pub fn run() {
         }
     }
 
+    if cli.by_files {
+        sizes.retain(|s| !s.is_dir);
+    } else if cli.by_folder {
+        sizes.retain(|s| s.is_dir);
+    }
+
     if sizes.is_empty() {
         stop_spinner(&mut sp);
         eprintln!("No files or folders found");
@@ -211,9 +225,16 @@ pub fn run() {
     let total_size = sizes.iter().map(|s| s.size).sum::<u64>();
     let sz = format_size(total_size, DECIMAL);
     println!("\n{} {}", "Total size:".green(), sz.green().bold());
+    let count_label = if cli.by_folder {
+        "Number of folders:"
+    } else if cli.by_files {
+        "Number of files:"
+    } else {
+        "Number of entries:"
+    };
     println!(
         "{} {}\n",
-        "Number of files:".green(),
+        count_label.green(),
         sizes.len().to_string().green().bold()
     );
 
