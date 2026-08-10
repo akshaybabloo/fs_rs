@@ -145,7 +145,10 @@ fn test_truncate_filename_no_extension() {
     // 21 + "..." + 21 = 45 visible chars, with exactly 3 dots from the separator.
     assert_eq!(truncated.chars().count(), 45);
     assert_eq!(truncated.matches('.').count(), 3);
-    assert_eq!(truncated, format!("{}...{}", "a".repeat(21), "a".repeat(21)));
+    assert_eq!(
+        truncated,
+        format!("{}...{}", "a".repeat(21), "a".repeat(21))
+    );
 }
 
 #[test]
