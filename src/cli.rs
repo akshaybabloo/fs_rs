@@ -216,7 +216,7 @@ pub fn run() {
     }
 
     let mut table = Table::new();
-    table.load_preset(NOTHING).set_width(80);
+    table.load_style(NOTHING).set_width(80);
 
     utils::add_row(&mut table, &sizes);
     stop_spinner(&mut sp);
@@ -241,7 +241,7 @@ pub fn run() {
     if cli.disk_usage {
         let mut disk_table = Table::new();
         disk_table
-            .load_preset(ASCII_MARKDOWN)
+            .load_style(ASCII_MARKDOWN)
             .set_header(vec!["Name", "Total", "Available"]);
         let disks = Disks::new_with_refreshed_list();
         for disk in &disks {
