@@ -25,7 +25,7 @@ struct Args {
     sort_by_size: bool,
 
     /// Show disk usage
-    #[arg(long, action = ArgAction::SetTrue)]
+    #[arg(long = "disk", action = ArgAction::SetTrue)]
     disk_usage: bool,
 
     /// Show as JSON output
