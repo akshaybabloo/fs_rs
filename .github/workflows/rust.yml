@@ -58,7 +58,7 @@ jobs:
             archive_ext: tar.gz
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     
     - name: Install Rust toolchain
       run: |
@@ -104,7 +104,7 @@ jobs:
     if: (github.event_name == 'release' && github.event.action == 'created') || github.ref_type == 'tag'
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Install Rust toolchain
       run: |
