@@ -59,6 +59,40 @@ struct Args {
     /// Ignore a file or folder by name when calculating sizes. Repeat to ignore multiple names.
     #[arg(long, short = 'i', value_name = "NAME", action = ArgAction::Append)]
     ignore: Vec<String>,
+
+    /// Maximum number of CPU threads used for scanning. Capped at the number of
+    /// available cores. Defaults to all available cores.
+    #[arg(long, value_name = "N", value_parser = parse_cpu)]
+    cpu: Option<usize>,
+}
+
+/// Parse and validate the `--cpu` value.
+fn parse_cpu(value: &str) -> Result<usize, String> {
+    let threads: usize = value
+        .parse()
+        .map_err(|_| format!("`{value}` is not a valid number of threads"))?;
+
+    if threads == 0 {
+        return Err("must be at least 1".to_string());
+    }
+
+    Ok(threads)
+}
+
+/// Restrict the global Rayon thread pool to `threads`, capped at the number of
+/// available cores since extra threads only add scheduling overhead.
+fn limit_threads(threads: usize) {
+    let available = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(threads);
+    let threads = threads.min(available);
+
+    if let Err(e) = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build_global()
+    {
+        eprintln!("{} {}", "Failed to limit CPU threads:".red(), e);
+    }
 }
 
 /// Run the CLI
@@ -67,6 +101,10 @@ pub fn run() {
 
     if cli.no_color {
         set_override(false);
+    }
+
+    if let Some(threads) = cli.cpu {
+        limit_threads(threads);
     }
 
     // Skip spinner for JSON mode — it writes control characters to stdout

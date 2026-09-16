@@ -26,6 +26,7 @@ fs_rs /path/to/folder1 /path/to/folder2
 
 - `-h` or `--help`: Get help
 - `-s` or `--sort-by-size`: Sort by size
-- `--disk-usage`: Get disk usages
+- `--disk`: Get disk usages
 - `--json`: Get output in JSON format, prints to stdout
+- `--cpu <N>`: Limit scanning to `N` CPU threads (capped at the number of available cores)
 - `--version`: Get version
