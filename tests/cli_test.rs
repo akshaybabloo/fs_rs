@@ -331,3 +331,43 @@ fn test_json_respects_sort_by_size() {
     assert_eq!(parsed[0]["name"], "large.txt", "largest should be first");
     assert_eq!(parsed[1]["name"], "small.txt", "smallest should be last");
 }
+
+#[test]
+fn test_cpu_limit_produces_same_sizes() {
+    let dir = tempdir().unwrap();
+    let subdir = dir.path().join("sub");
+    fs::create_dir(&subdir).unwrap();
+    File::create(subdir.join("a.txt"))
+        .unwrap()
+        .write_all(&[b'x'; 500])
+        .unwrap();
+    File::create(dir.path().join("b.txt"))
+        .unwrap()
+        .write_all(&[b'y'; 100])
+        .unwrap();
+
+    let limited = fs_rs()
+        .arg(dir.path())
+        .arg("--json")
+        .arg("--cpu")
+        .arg("1")
+        .output()
+        .unwrap();
+    let unlimited = fs_rs().arg(dir.path()).arg("--json").output().unwrap();
+
+    assert!(limited.status.success());
+    assert!(unlimited.status.success());
+    assert_eq!(
+        String::from_utf8(limited.stdout).unwrap(),
+        String::from_utf8(unlimited.stdout).unwrap(),
+        "--cpu should only change thread count, not results"
+    );
+}
+
+#[test]
+fn test_cpu_rejects_invalid_values() {
+    for value in ["0", "abc", "-1"] {
+        let output = fs_rs().arg(".").arg("--cpu").arg(value).output().unwrap();
+        assert!(!output.status.success(), "--cpu {value} should be rejected");
+    }
+}

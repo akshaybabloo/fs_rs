@@ -24,8 +24,16 @@ fs_rs /path/to/folder1 /path/to/folder2
 
 ### Options
 
-- `-h` or `--help`: Get help
-- `-s` or `--sort-by-size`: Sort by size
-- `--disk-usage`: Get disk usages
-- `--json`: Get output in JSON format, prints to stdout
-- `--version`: Get version
+- `-s` or `--sort-by-size`: Sort the output by size
+- `--disk`: Show disk usage
+- `--json`: Show as JSON output
+- `-t` or `--tree`: Show tree representation
+- `--by-files`: Show only files (omit directories from the listing)
+- `--by-folder`: Show only folders (omit files from the listing)
+- `-d <DEPTH>` or `--depth <DEPTH>`: Depth of the tree representation. Only applicable if `--tree` is set. Defaults to unlimited depth
+- `--ascii`: Use ASCII characters for tree representation instead of Unicode
+- `--no-color`: Disable colored output
+- `-i <NAME>` or `--ignore <NAME>`: Ignore a file or folder by name when calculating sizes. Repeat to ignore multiple names
+- `--cpu <N>`: Maximum number of CPU threads used for scanning. Capped at the number of available cores. Defaults to all available cores
+- `-h` or `--help`: Print help
+- `-V` or `--version`: Print version
