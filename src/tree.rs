@@ -177,6 +177,25 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
     output
 }
 
+/// Label used for the root line of the tree.
+///
+/// Uses `./` for the current directory and the directory's own name
+/// otherwise, falling back to the path as given when there is no name
+/// (for example `/` or `..`).
+fn root_label(path: &Path) -> String {
+    let display = path.display().to_string();
+
+    if display == "." || display == "./" {
+        return "./".to_string();
+    }
+
+    match path.file_name().and_then(|name| name.to_str()) {
+        Some(name) => format!("{}/", name),
+        None if display.ends_with(std::path::MAIN_SEPARATOR) => display,
+        None => format!("{}{}", display, std::path::MAIN_SEPARATOR),
+    }
+}
+
 /// Generates a tree representation of a given path.
 ///
 /// # Arguments
@@ -188,10 +207,18 @@ fn render_tree(node: &TreeNode, prefix: &str, ascii: bool) -> String {
 ///
 /// # Returns
 ///
-/// * A String representing the tree structure.
+/// * A String representing the tree structure, starting with the root
+///   directory itself.
 pub fn generate_tree(path: &Path, depth: Option<usize>, ascii: bool, ignore: &[String]) -> String {
     let max_depth = depth.unwrap_or(usize::MAX);
-    let (entries, _) = collect_entries(path, path, 1, max_depth, ignore);
+    let (entries, total_size) = collect_entries(path, path, 1, max_depth, ignore);
     let tree = build_tree(&entries);
-    render_tree(&tree, "", ascii)
+
+    let mut output = format!(
+        "{}  ({})\n",
+        root_label(path).blue(),
+        format_size(total_size, DECIMAL).blue()
+    );
+    output.push_str(&render_tree(&tree, "", ascii));
+    output
 }
